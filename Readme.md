@@ -20,6 +20,7 @@ Clone the Repo and run the getpackages skript which will install the requiered
 To ensure that the LaTeX snippets compile one must have the following packages installed:
 * tabularray
 * siunitx
+
 to ensure smooth operation a **full** installation of **Texlive 2021** is recommended. 
 
 ## Todo add other Infos
