@@ -16,8 +16,8 @@ Clone the Repo and run the getpackages skript which will install the requiered
 * Python3 
 * pip3 
 
-### Prerequisites for LaTeX snippets
-To ensure that the LaTeX snippets compile one must have the following packages installed:
+### Prerequisites for <img src="https://render.githubusercontent.com/render/math?math=\latex"> snippets
+To ensure that the <img src="https://render.githubusercontent.com/render/math?math=\latex"> snippets compile one must have the following packages installed:
 * tabularray
 * siunitx
 
