@@ -1,0 +1,300 @@
+% Protokoll-Template
+% by Andreas Zach
+
+
+% class
+\documentclass[ngerman]{scrartcl}
+
+
+% input and font
+\usepackage[utf8]{inputenc}  % input in UTF-8
+\usepackage[T1]{fontenc}  % output in T1 fonts (west European encoding)
+\usepackage{lmodern}  % Latin modern font
+\usepackage{inconsolata}  % Consolas font for monospaced text
+\usepackage{babel}  % language package
+\usepackage{amsmath, amssymb, amstext, mathtools}  % math packages (American Math Society) + correction of amsmath (mathtools) [loads amsmath automatically]
+\usepackage{letltxmacro}  % \let command for robust macros (new sqrt)
+
+
+% page geometry
+\usepackage{scrlayer-scrpage}  % page formatting with KOMA options
+\usepackage{geometry}
+
+
+% floats
+\usepackage[hypcap=false, labelfont=bf]{caption, subcaption}  % caption editing - hypcap warning with hyperref
+\usepackage{float}  % for [H] (forced here) specifier
+\usepackage{tabularray}  % best tables
+\UseTblrLibrary{diagbox}  % diagonal boxes in tables (auto-import from tabularray - separate import not needed)
+
+
+% input
+\usepackage{graphicx}  % input JPEG, PNG, PDF, etc.
+\usepackage{pdfpages}  % input PDF as whole pages
+\usepackage{lastpage}  % reference to last page
+
+
+% text
+\usepackage[locale=DE, uncertainty-mode=separate]{siunitx}  % SI units, German formatting - \pm stays \pm instead of ..(.)
+\UseTblrLibrary{siunitx}  % S column for tabularray - TRIPLE BRACKETS!! {{{}}} - separate import in order to use options
+\usepackage{icomma}  % no space after commas instead of English points) in decimal values
+\usepackage{enumitem}  % better enumerating with style options
+\usepackage{nicefrac}  % inline-fractions in n/d-style
+\usepackage{xcolor}  % custom colors (tabularray loads package nicecolors)
+\usepackage{listings, scrhack}  % code display; listings in combination with KOMA
+
+
+% literacy
+\usepackage[style=apa]{biblatex}  % backend=Biber is standard
+\usepackage{csquotes}  % better quotation - should also be used in combination with package babel (warning)
+\usepackage{xurl}  % breaks links - after BibLaTeX, but before hyperref!
+\usepackage[hidelinks]{hyperref}  % produces most errors, last to load
+
+
+% KOMA setups
+% header and footer
+\pagestyle{scrheadings}  % KOMA style
+\clearpairofpagestyles  % reset
+\setkomafont{pageheadfoot}{\normalfont}  % standard font in header and footer
+\setlength{\headheight}{27.2pt}  % just look at the warning
+\ihead{Versuchsname}  % inner (left) head
+\chead{\textsc{Zach} Andreas \\ 12004790}  % center head
+\ohead{Datum der Messung}  % outer (right) head
+\cfoot{\pagemark{} / \pageref*{LastPage}}  % center foot - *: ref but no hyperlink
+% {}: empty statement
+% \ : protected space
+% \,: small space
+\DeclareTOCStyleEntry{dottedtocline}{section}  % sections in TableOfContents with dotted lines
+\KOMAoptions{parskip=half-}  % paragraphs with half a line height space instead of indentation, last line with no special treatment
+
+
+% package setups
+
+% BibLaTeX source
+\addbibresource{C:/Users/andre/Dropbox/Uni/Physik/Allgemeines/protokoll_template/files/JabRef_Database/physics.bib}  % database import with absolute path - file ending!
+
+
+% rewrite names (babel overwrites German with standard English names, therefore at document beginn [after everything is loaded])
+\AtBeginDocument{\renewcommand{\refname}{Literaturverzeichnis}}
+% others:
+% \contentsname
+% \listtablename
+% \listfigurename
+
+
+% xcolor
+\definecolor{code_keyword}{HTML}{A06E9D}
+\definecolor{code_string}{HTML}{AD6E3E}
+\definecolor{code_comment}{HTML}{6A9955}
+%\definecolor{code_basic}{HTML}{D4D4D4}
+%\definecolor{code_background}{HTML}{1E1E1E}
+
+
+% listings
+\lstdefinestyle{python}{
+    basicstyle=\fontfamily{zi4}\footnotesize,%\color{code_basic},  % \footnotesize contains \selectfont implicitly
+    %backgroundcolor=\color{code_background},   
+    commentstyle=\color{code_comment},
+    keywordstyle=\bfseries\color{code_keyword},
+    numberstyle=\tiny,
+    stringstyle=\color{code_string},
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2,
+}
+\lstset{style=python}
+\renewcommand*{\ttdefault}{cmtt}
+
+
+% new sqrt
+% https://en.wikibooks.org/wiki/LaTeX/Mathematics
+\makeatletter
+\let\oldr@@t\r@@t
+\def\r@@t#1#2{%
+\setbox0=\hbox{$\oldr@@t#1{#2\,}$}\dimen0=\ht0
+\advance\dimen0-0.2\ht0
+\setbox2=\hbox{\vrule height\ht0 depth -\dimen0}%
+{\box0\lower0.4pt\box2}}
+\LetLtxMacro{\oldsqrt}{\sqrt}
+\renewcommand*{\sqrt}[2][\ ]{\oldsqrt[#1]{#2} }
+\makeatother
+
+    
+% tabularray
+\SetTblrInner{  % set mandatory options
+    hlines,
+    vlines,
+    columns={
+        halign=c,
+        valign=m,
+        co=-1,  % ~ X column with best fit (standard: co=1)
+    },
+    width=\linewidth,
+    hspan=even,     % not sure if those two work
+    vspan=minimal,  % not sure if those two work
+}
+
+
+% own commands
+\newcommand*{\der}[3][]{\frac{\mathrm{d}^{#1}#2}{\mathrm{d}#3^{#1}}}  % derivative
+\newcommand*{\pder}[3][]{\frac{\partial^{#1}#2}{\partial#3^{#1}}}     % partial derivative
+% \newcommand* can't contain multiple lines
+% \newcommand can
+
+
+
+
+
+\begin{document}
+
+\includepdf{deckblatt.pdf}
+
+\clearpage
+\tableofcontents
+\newpage
+
+\section{Aufgabenstellung}
+\label{sec:aufgabenstellung}
+
+
+
+\section{Grundlagen und Voraussetzungen}
+\label{sec:grundlagen_voraussetzungen}
+
+Text1\footcite[1000]{ref:dem1} \\
+Text2\footcite[Kapitel 74]{ref:knoll} \\
+Text3\footnote{\url{https://online.uni-graz.at/kfu_online/ee/ui/ca2/app/desktop/\#/login?$ctx=&redirect=Li4vLi4vLi4vZWUvdWkvY2EyL2FwcC9kZXNrdG9wLyMvc2xjLnRtLmNwL3N0dWRlbnQvY291cnNlcy82Mjg3OTk=}} \\  % must escape the # (\#), error otherwise!!
+Text4\footcite{ref:genol2013}
+%
+% Gleichungsumgebung
+\begin{equation}
+    \label{eq:grenzen-oben-unten}
+    \int \limits_{a}^{b} x^2 \, dx =\frac{b^3-a^3}{3}  % \, liefert quasi ein Leerzeichen - single character exponent muss nicht in {}-Klammern stehen
+\end{equation}
+%
+% inline math
+Inline math: \(\lim \limits_{n \to \infty} \left( 1 + \frac{1}{n} \right) ^{n} = e\)  \\ \\ % new, encouraged
+Inline math: $\lim \limits_{n \to \infty} \frac{1}{2n} = 0$  % old, discouraged
+%
+% display math
+\begin{displaymath}
+    \sqrt[3]{27} = 3 \implies A \times B \implies \SI{30.0(2)}{\meter\per\second}
+\end{displaymath}
+%
+\[ \int \frac{1}{x} \, dx = \ln|x| \]  % new, encouraged - same as \begin{equation*} when using amsmath
+$$ \textbf{F} = m \cdot \textbf{a} $$  % old, very discouraged
+
+
+
+\section{Versuchsanordnung}
+\label{sec:versuchsanordnung}
+
+\begin{figure}[H]
+    \centering
+    \begin{samepage}
+        \includegraphics[width=0.6\linewidth]{example-image-golden}
+        \caption{Example image golden}
+        \label{fig:example-image-golden}
+    \end{samepage}
+\end{figure}
+
+
+
+\section{Geräteliste}
+\label{sec:geraeteliste}
+
+\begin{table}[H]
+    \centering
+    \begin{samepage}  % caption and table on same page
+        \caption[Geräteliste]{Verwendete Geräte und wichtige Materialien}  % optional argument for List of Tables, mandatory argument for caption
+        \label{tab:geraeteliste}
+        \begin{tblr}{
+                colspec={
+                        *{3}{Q}  % multiplication syntax: *{n}{thing}
+                        S[table-format=2.2]
+                        Q[co=0]  % Q column for not overwriting standard values of preamble (no extendable width in order to work with diagbox)
+                    },
+                cell{2}{2}={r=2}{},  % empty specifier for not overwriting standard values of preamble
+                cell{4}{3}={r=2,c=2}{},
+            }
+            Gerät   & Hersteller & Modell   & {{{Unsicherheit}}}    & Anmerkung                           \\
+            Gerät 1 & ich        & meins    & 0.01                  & {quasi \\ perfekt \\ genau}         \\
+            Gerät 2 &            & passt so & 21.4                  & quasi perfekt genau                 \\
+            Gerät 3 & -          & passt so &                       & --//--                              \\
+            Gerät 4 & -          &          &                       & \diagbox[dir=NE]{Alle meine}{Entchen} \\  % if diagbox is not the widest column, width must be typeset manually -.-
+        \end{tblr}
+    \end{samepage}
+\end{table}
+
+
+
+\section{Versuchsdurchführung und Messergebnisse}
+\label{sec:versuchsdurchfuehrung_messergebnisse}
+
+% longtblr test
+% \begin{center}
+%     \captionof{table}{Longtblr}
+%     \begin{longtblr}{hlines, vlines}
+%         head1 & head2 & head3 \\
+%         mid1 & mid2 & mid3 \\
+%         mid1 & mid2 & mid3 \\
+%         mid1 & mid2 & mid3 \\
+%         mid1 & mid2 & mid3 \\
+%         mid1 & mid2 & mid3 \\
+%         mid1 & mid2 & mid3 \\
+%         mid1 & mid2 & mid3 \\
+%         mid1 & mid2 & mid3 \\
+%         mid1 & mid2 & mid3 \\
+%         mid1 & mid2 & mid3 \\
+%         mid1 & mid2 & mid3 \\
+%         mid1 & mid2 & mid3 \\
+%         mid1 & mid2 & mid3 \\
+%         mid1 & mid2 & mid3 \\
+%         mid1 & mid2 & mid3 \\
+%         mid1 & mid2 & mid3 \\
+%         mid1 & mid2 & mid3 \\
+%         mid1 & mid2 & mid3 \\
+%         mid1 & mid2 & mid3 \\
+%         mid1 & mid2 & mid3 \\
+%         mid1 & mid2 & mid3 \\
+%         foot1 & foot2 & foot3 \\
+%     \end{longtblr}
+% \end{center}
+
+
+
+\section{Auswertung}
+\label{sec:auswertung}
+
+
+
+\section{Zusammenfassung und Diskussion}
+\label{sec:zusammenfassung_diskussion}
+
+
+
+\addsec{Python-Skript}
+\label{sec:python}
+
+\lstinputlisting[language=Python]{../uncertainties.python/error_propagation.py}
+
+
+
+\clearpage
+% Literaturverzeichnis
+\printbibliography
+
+% Abbildungsverzeichnis
+\listoffigures
+
+% Tabellenverzeichnis
+\listoftables
+
+\end{document}

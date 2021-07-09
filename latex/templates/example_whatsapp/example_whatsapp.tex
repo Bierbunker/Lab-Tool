@@ -1,0 +1,506 @@
+% example TeX-file from WhatsApp group by "Luci(fer)"
+
+\documentclass[12pt, a4paper]{article}
+\usepackage{amsmath}
+\usepackage{german}
+\usepackage{graphicx}
+\usepackage[skip=5pt,font=scriptsize,justification=justified,singlelinecheck=false]{caption}
+\usepackage{wrapfig}
+\usepackage{float}
+\usepackage{siunitx}
+\usepackage{textcomp}
+\usepackage{accents}
+\usepackage{enumitem}
+\usepackage{color}
+\usepackage{comment} 
+%\usepackage[version=3]{mhchem}
+\usepackage{url}
+\usepackage{pdfpages}
+%\usepackage{caption}
+%\usepackage{subfigure}
+
+
+
+
+
+
+\begin{document}
+
+
+
+
+%\ihead{Martin Lindlmayer  \newline Luca Gratz}
+%\chead{\newline Interferometer}
+%\ohead{Gruppe 5 \newline \today}
+
+\thispagestyle{empty}
+
+%\includepdf[pages=1]{Deckblatt.pdf}
+
+\newpage
+\clearpage
+
+\newpage 
+\thispagestyle{empty}
+\quad 
+\newpage
+
+\thispagestyle{empty}
+
+%\includepdf[pages=1]{Deckblatt.pdf}
+
+\newpage
+\clearpage
+
+\newpage 
+\thispagestyle{empty}
+\quad 
+\newpage
+
+\title{Halleffekt}
+\author{\\
+Institut für Physik der Universität Graz\\\\Fortgeschrittene Experimentiertechniken\\Kurs 1 Granitzer / Gruppe 1\\\\Luca Gratz\\ 
+luca.gratz@edu.uni-graz.at\\}
+
+\date{01. September 2020}
+\maketitle
+\thispagestyle{empty}
+
+\newpage
+\clearpage
+\thispagestyle{empty}
+\tableofcontents
+\renewcommand{\contentsname}{Inhaltsverzeichnis}
+
+\thispagestyle{empty}
+
+
+\newpage
+
+\clearpage
+\setcounter{page}{1}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Aufgabenstellung}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{itemize}
+\item Durchführung einer Offset-Kompensation der Hallspannung vor der Messung.
+\item Bestimmung der Hallkonstante $R_H$ sowie ob es sich um einen p- oder n-dotierten Ge-Kristall handelt.
+\item Bestimmung der Ladungsträgerkonzetration.
+\end{itemize}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Voraussetzungen und Grundlagen}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Dotierung von Halbleitern}
+
+Halbleiter haben, wie der Name schon vermuten lässt, an sich keine hohe Leitfähigkeit, diese kann jedoch gezielt durch das einbringen von Fremdatomen beeinflusst werden. Dieses "verunreinigen" wird als dotieren bezeichnet und man unterscheidet hier zwischen p-dotierten (dreiwertiges Element wird eingebaut) und n-dotierten (fünfwertiges Element wird eingebaut) Halbleitern.
+
+\begin{figure}[!htpb]
+    \centering
+    \includegraphics[width=.9\textwidth]{p und n dotierung.jpg}
+    \caption[Schematische Darstellung von n-Dotierung sowie p-Dotierung]
+            {Schematische Darstellung von n-Dotierung sowie p-Dotierung}
+    \label{fig:pnhalbleiter}
+\end{figure}
+\FloatBarrier
+
+\subsubsection{n-Halbleiter}
+
+Fünfwertige Atome, wie Phosphor, Arsen oder Antimon, besitzen fünf Valenzelektronen, vier dieser Außenelektronen werden zum Einbau in den Halbleiterkristall benötigt (Elektronenpaar-Bindung). Das fünfte Außenelektron ist nur noch sehr schwach an den positiven Atomrumpf des Fremdatoms gebunden und löst sich schon bei geringster Energiezufuhr von diesem. Zurück bleibt dann der positive Atomrumpf des Fremdatoms, welches oft auch als Donatoratom bezeichnet wird. Im Gegensatz zu einem psoitiven Loch bei der Eigenleitung ist der positive Atomrumpf des Fremdatoms nicht beweglich, da alle Bindungen bereits abgesättigt sind und keine Elektronenfehlstelle besteht.
+
+\subsubsection{p-Halbleiter}
+
+Dreiwertige Atome, wie Bor, Gallium oder Indium haben nur drei Valenzelektronen, es werden jedoch vier Elektronen zum Einbau in den Halbleiterkristall benötigt. Bei nicht allzu tiefen Temperaturen besteht nun eine hohe Wahrscheinlichkeit dafür, dass sich das Fremdatom zur Absättigung der Bindung aus der Umgebung ein Elektron "holt", man bezeichnet daher auch das dreiwertige Fremdatom als Akzeptoratom. Auf diese Weise entseht am Ort des Fremdatoms eine negative ortsfeste Ladung und in der Umgebung des Fremdatoms ein positives Loch, da ja einem Halbleiteratom ein Elektron Abgezogen wurde.
+
+
+
+\subsection{Halleffekt}
+
+\begin{figure}[!htpb]
+    \centering
+    \includegraphics[width=1\textwidth]{Halleffekt.png}
+    \caption[Schematische Darstellung vom Halleffekt]
+            {Schematische Darstellung vom Halleffekt}
+    \label{fig:halleffekt}
+\end{figure}
+\FloatBarrier
+
+Legt man an den Enden einer rechteckförmigen Halbleiterprobe eine Spannung an, so bewegen sich die Elektronen und Löcher in Richtung bzw Gegenrichtung der elektrischen Feldstärke. Ein senkrecht zur Bewegungsrichtung weisendes magnetisches Feld bewirkt eine Ablenkung der Ladungsträger aufgrund der Lorentzkraft. Durch die einseitige Anhäufung von Ladungsträgern entsteht ein elektrisches Querfeld $E_H$, dass diese Querbewegung zum Erliegen bringt.\\
+Wird nun ein Kräftegleichgewicht zwischen Kraft durch Querfeld und Lorentzkraft hergestellt so ergibt sich folgender Zusammenhang:
+
+
+\begin{equation}
+    e E_H = e(v \times B)
+    \label{eq_kraftgleich}
+\end{equation}
+\\
+$e$...Ladung der Ladungsträger (normalerweise Elektronen)\\
+$v$...Geschwindigkeit der Ladungsträger\\
+
+Für einen Strom in x-Richtung und einem in z-Richtung angelegtem B-Feld ergibt sich:
+
+\begin{equation}
+    E_H = B_z v_x = R_H j_x B_z
+    \label{eq_querfeld}
+\end{equation}
+
+Mit den geometrischen Abmessungen der Probe kann man $E_H$ und $j_x$ durch $U_H$ und $I_Q$ ausdrücken und erhält:
+
+\begin{equation}
+    U_H = \frac{R_H I_Q B_z}{d}
+    \label{eq_hallspannung}
+\end{equation}
+\\
+$U_H$...Hallspannung\\
+$I_Q$...Querstrom\\
+$R_H$...Hallkonstante\\
+$d$...Dicke der Halbleiterprobe\\
+
+Durch umformen erhalten wir daraus die Hallkonstante:
+
+\begin{equation}
+    R_H = \frac{U_H}{I_Q} \frac{d}{B_z}
+    \label{eq_hallkonstante}
+\end{equation}
+\\
+
+\newpage
+Weiters kann die Hallkonstante wie folgt berechnet werden:
+
+\begin{equation}
+    R_H = \frac{1}{e} \frac{p-b^2n}{(p+bn)^2}
+    \label{eq_hall}
+\end{equation}\\
+
+$p$...Konzentration der Löcher\\
+$n$...Konzentration der Elektronen\\
+$b$...Verhältnis der Beweglichkeiten beider Ladungsträgerarten ($\frac{\mu_n}{\mu_p}$)\\
+
+Überwiegt eine Art von Ladungsträgern, so vereinfacht sich die Hallkonstante zu:
+
+\begin{equation}
+    R_H = -\frac{1}{ne} \hspace{2.0cm} (Elektronenleitung) \newline
+    \label{eq_elektronenleitung}
+\end{equation}\\
+
+\begin{equation}
+    R_H = \frac{1}{pe} \hspace{2.0cm} (Löcherleitung)
+    \label{eq_loecherleitung}
+\end{equation}
+
+Da sich Elektronen und Löcher in entgegegesetzte Richtungen bewegen, aber auch entgegengesetzte Ladungen besitzen, werden sie auf die selbe Seite der Hallsonde abgelenkt. Das Vorzeichen der Hallspannung hängt daher von der Art der Ladungsträger ab. Damit lässt sich der Dotierungstyp (p oder n) des Halbleiters bestimmen.
+
+\newpage
+\section{Versuchsaufbau}
+\label{Versuchsaufbau}
+
+In Abbildung \ref{Aufbau} ist der verwendete Versuchsaufbau schematisch dargestellt, B entspricht hierbei der Probe, die in das durch Spulen erzeugte Magnetfeld geschoben wird. Die Spulen sind dabei bei dem Anschluss mit $"15V, 5A"$ angeschlossen und die Hallspannung wird beim Anschluss $U_H$ abgegriffen.
+
+\begin{figure}[!htpb]
+    \centering
+    \includegraphics[width=.8\textwidth]{Aufbau.png}
+    \caption[Schematischer Versuchsaufbau]
+            {Schematischer Versuchsaufbau}
+    \label{Aufbau}
+\end{figure}
+\FloatBarrier
+
+In Abbildung \ref{Aufbau2} ist die Anschlussbelegung des Halleffekt-Grundgeräts nochmal detaillierter beschrieben.
+
+\begin{figure}[!htpb]
+    \centering
+    \includegraphics[width=1\textwidth]{Aufbau2.png}
+    \caption[Anschlussbelegung des Halleffekt-Grundgeräts]
+            {Anschlussbelegung des Halleffekt-Grundgeräts}
+    \label{Aufbau2}
+\end{figure}
+\FloatBarrier
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\section{Geräteliste}
+\begin{table}[!htbp]
+\caption{Auflistung der verwendeten Geräte}
+\label{my-label}
+\begin{tabular}{|l|l|1|1|1|}
+\hline
+Nr & Bezeichnung &Hersteller& Typ & Inventarnummer              \\ \hline
+1  & Power Supply & EA & EA-PS 3032-05 B & LNG-23          \\ \hline
+2  & Cassy-Lab Sensor & Leybold & Sensor-Cassy 2, 524013 & -             \\ \hline
+3  & Spulen & Leybold &562 13 & - \\ \hline
+4  & Halleffekt-Grundgerät & Leybold & - & - \\ \hline
+5  & Halbleiterprobe& - &- & -  \\ \hline
+6  & Versuchsaufbau& - &- & -  \\ \hline
+7 & Cassy Lab 2& Leybold & für Datenaufnahme & -  \\ \hline
+8  & Excel& Microsoft & für Datenauswertung & -  \\ \hline
+\end{tabular}
+\end{table}
+
+\newpage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Durchführung / Messergebnisse}
+
+\subsection{Offset-Kompensation der Hallspannung}
+Zuerst wurde die Offset-Kompensation der Hallspannung durchgeführt, dafür wurde zuerst der Querstrom $I_Q$ auf 20 mA und die Stromstärke durch den Elektromagneten $I_M$ auf 0 A gestellt. Nun wurde $I_M$ so eingestellt, dass eine Magnetfeldstärke von 0 mT angezeigt wurde. Daraufhin soll die Hallspannung mit dem Knopf $U_{Comp.}$ auf Null gebracht werden, da die Reichweite der Kompensation nicht ausgereicht hat, um die Hallspannung wirklich auf Null zu bringen, wurde mit Hilfe von $I_M$ das Magnetfeld so eingestellt, dass dies der Fall war. Daraus ergibt sich nun ein Offset-Wert für die magnetische Flussdichte von:
+
+\begin{equation*}
+    B_{offset} = -29 mT
+\end{equation*}
+
+Dieser Wert wurde bei der Datenaufnahme berücksichtigt (siehe Tab. \ref{messergebnisse}), um wirklich von -250 mT bis +250 mT zu messen.
+
+\subsection{Bestimmung der Hallkonstante eines dotierten Ge-Kristalls}
+\label{5_Hallkonstante}
+
+Um in späterer Folge die Hallkonstante des dotierten Ge-Kristalls bestimmen zu können, wurde bei konstanten B-Feldern im Bereich von -250 mT bis +250 mT (in 50 mT Schritten) der Querstrom $I_Q$ variiert und die dadurch entstehende Hallspannung $U_H$ aufgezeichnet. Die aufgenommenen Daten befinden sich in Tabelle \ref{messergebnisse}.
+
+\begin{table}[!htbp]
+\caption{Messergebnisse zur Bestimmung der Hallkonstante\\
+B...magnetische Flussdichte\\
+$I_Q$...Querstrom\\
+$U_H$...Hallspannung\\}
+\label{messergebnisse}
+\begin{tabular}{|l||l|1|1|1|1|1|1|}
+\hline
+$I_Q$ / mA & 2 & 5& 10 & 15 & 20 & 25 & 30              \\ \hline
+\hline
+B / mT &$U_H$ / mV &$U_H$ / mV &$U_H$ / mV &$U_H$ / mV &$U_H$ / mV &$U_H$ / mV &$U_H$ / mV \\ \hline
+\hline
+-279 & -2.8 & -7.4 & -13.5 & -20.0 & -27.3 & -34.2 & -40.2\\ \hline
+-229 & -2.2 & -5.5 & -11.3 & -16.8 & -21.4 & -27.5 & -32.0\\ \hline
+-179 & -1.5 & -3.9 & -8.4 & -12.5 & -16.0 & -20.9 & -24.1\\ \hline
+-129 & -0.9 & -2.6 & -5.3 & -8.1 & - 10.5 & -13.7 & -16.0\\ \hline
+-79 & -0.3 & -1.3 & -2.2 & -4.1 & -5.2 & -6.8 & -8.1 \\ \hline
+-29 & 0.2 & 0.2 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0\\ \hline
+21 & 0.7 & 1.5 & 2.9 & 4.2 & 5.2 & 6.8 & 8.0 \\ \hline
+71 & 1.2 & 3.2 & 5.5 & 8.6 &11.1 & 14.1 & 16.1\\ \hline
+121 & 1.8 & 4.7 & 8.4 & 12.3 & 16.0 & 20.5 & 24.5\\ \hline
+171 & 2.4 & 6.2 & 11.1 & 17.1 & 22.2 & 27.9 & 32.7\\ \hline
+221 & 3.0 & 7.5 & 14.6 & 20.3 & 27.3 & 34.0 & 40.7\\ \hline
+
+\end{tabular}
+\end{table}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\section{Auswertung}
+
+\subsection{Bestimmung der Hallkonstante eines dotierten Ge-Kristalls}
+\label{6_Hallkonstante}
+
+Mit den Daten aus Tabelle \ref{messergebnisse} werden nun zwei Plots erstellt, in denen die Hallspannung als Funktion des Querstroms bei den verschiedenen magnetischen Flussdichten aufgeteragen wird.(siehe Abb. \ref{U/Ineg} $\&$ \ref{U/Ipos})\\
+
+\begin{figure}[!htpb]
+    \centering
+    \includegraphics[width=1\textwidth]{U(I)neg.png}
+    \caption{Hallspannung als Funktion des Querstroms bei verschiedenen negativen B}
+    \label{U/Ineg}
+\end{figure}
+
+ 
+\begin{figure}[!htpb]
+    \centering
+    \includegraphics[width=1\textwidth]{U(I)pos.png}
+    \caption{Hallspannung als Funktion des Querstroms bei verschiedenen positiven B}
+    \label{U/Ipos}
+\end{figure}
+
+
+Die Datenpunkte werden linear gefittet um aus der Steigung das Verhältnis $\frac{U}{I}$ zu erhalten, welches für die weiteren Berechnungen benötigt wird. Diese Werte sind in Tabelle \ref{u/Ifit} zu finden. Dabei werden die Werte bei $B = 0$ vernachlässigt, da sie keine realistischen Werte für die Hallkonstante liefern würden, ausserdem wird für die weiteren Berechnungen der Offset-Wert der magnetischen Flussdichte abgezogen um mit den tatsächlichen Werten zu rechnen.
+
+\begin{table}[!htbp]
+\caption{Werte des linear Fits ($\frac{U}{I}$) bei verschiedenen B\\\\
+$\frac{U}{I}$...Verhältnis von Hallspannung und Querstrom\\
+B...magnetische Flussdichte unter Berücksichtigung des Offset-Wertes\\}
+\label{u/Ifit}
+\begin{tabular}{|l|l|}
+\hline
+B / mT & $\frac{U}{I}$ / $\frac{mV}{mA}$              \\ \hline
+-250 & -1.3398 \\\hline
+-200 & -1.0701 \\\hline
+-150 & -0.8160 \\\hline
+-100 & -0.5424 \\\hline
+-50 & -0.2791 \\\hline
+50 & 0.2596 \\\hline
+100 & 0.5375 \\\hline
+150 & 0.8002 \\\hline
+200 & 1.0842 \\\hline
+250 & 1.3333 \\\hline
+\end{tabular}
+\end{table}
+
+\newpage
+Mit den Daten aus Tabelle \ref{u/Ifit} und der Beziehung aus Gleichung \ref{eq_hallkonstante} kann das Verhältnis von Hallkonstante und Dicke der Halbleiterprobe berechnet werden. (siehe Tab. \ref{R/d})
+
+\begin{table}[!htbp]
+\caption{Werte des linear Fits ($\frac{U}{I}$) bei verschiedenen B\\\\
+$\frac{U}{I}$...Verhältnis von Hallspannung und Querstrom\\
+$\frac{R_H}{d}$...Verhältnis von Hallkonstante und Schichtdicke der Halbleiterprobe\\
+B...magnetische Flussdichte unter Berücksichtigung des Offset-Wertes\\}
+\label{R/d}
+\begin{tabular}{|l|l|l|}
+\hline
+B / mT & $\frac{U}{I}$ / $\frac{mV}{mA}$ &$\frac{R_H}{d}$ / $\frac{m^2}{C}$             \\ \hline
+-250 & -1.3398 & 0.00536 \\\hline
+-200 & -1.0701 & 0.00535\\\hline
+-150 & -0.8160 & 0.00544\\\hline
+-100 & -0.5424 & 0.00543\\\hline
+-50 & -0.2791 & 0.00558\\\hline
+50 & 0.2596 & 0.00519\\\hline
+100 & 0.5375 & 0.00538\\\hline
+150 & 0.8002 & 0.00533\\\hline
+200 & 1.0842 & 0.00542\\\hline
+250 & 1.3333 & 0.00533\\\hline
+\end{tabular}
+\end{table}
+
+Die Werte von $\frac{R_H}{d}$ werden nun gemittelt und die Unsicherheit mit Hilfe der Standardabweichung bestimmt:
+
+\begin{equation*}
+   (berechnet) \hspace{2.0cm} \Bar{\frac{R_H}{d}} = (5.4 \pm 0.1) *10^{-3} \frac{m^2}{C} 
+\end{equation*}
+
+
+Weiters kann dieses Verhältnis bestimmt werden indem man die Daten aus Tabelle \ref{u/Ifit} in Diagrammen aufträgt und linear fittet (siehe Abb. \ref{fig:hallneg} $\&$ \ref{fig:hallpos}). Dies wurde gemacht um die Ergebnisse der berechneten Werte mit den gefitteten vergleichen zu können.
+
+\begin{figure}[!htpb]
+    \centering
+    \includegraphics[width=1\textwidth]{I(B:1)neg.png}
+    \caption{Verhältnis von Hallspannung zu Querstrom als Funktion der magnetischen Flussdichte bei negativen B}
+    \label{fig:hallneg}
+\end{figure}
+
+ 
+\begin{figure}[!htpb]
+    \centering
+    \includegraphics[width=1\textwidth]{I(B:1)pos.png}
+    \caption{Verhältnis von Hallspannung zu Querstrom als Funktion der magnetischen Flussdichte bei positiven B}
+    \label{fig:hallpos}
+\end{figure}
+
+Aus den Abbildungen \ref{fig:hallneg} $\&$ \ref{fig:hallpos} erhalten wir folgende Geradengleichungen in der Form:
+
+\begin{equation*}
+    y = kx + d
+\end{equation*}
+
+wobei d vernachlässigt wird und y der Hallkonstante, k dem Quotienten $\frac{U}{I*B}$ und x der Dicke $d$ der Halbleiterprobe entspricht.
+
+\begin{equation*}
+    (negativ) \hspace{2.0cm} R_H = 0.0053x
+\end{equation*}
+
+\begin{equation*}
+    (positiv) \hspace{2.0cm} R_H = 0.0054x
+\end{equation*}
+
+Mittelt man diese Werte und berücksichtigt man die Standardabweichung so ergibt sich folgender Wert:
+
+\begin{equation*}
+   (gefittet) \hspace{2.0cm} \Bar{\frac{R_H}{d}} = (5.4 \pm 0.1) *10^{-3} \frac{m^2}{C}
+\end{equation*}
+
+
+Da mir die Schichtdicke der Halbleiterprobe nicht bekannt ist und ich diese leider auch nicht im Vorbereitungsskript finde, nehme ich um einen absoluten Wert für die Hallkonstante zu erhalten eine Schichtdicke von
+
+\begin{equation*}
+    d = 1 mm
+\end{equation*}
+
+an.\\
+Dass heißt meine Hallkonstante ist nur für diese eine Schicktdicke richtig. Natürlich kann man in die Geradengleichung jede beliebige Schicktdicke einsetzen um die dazugehörige Hallkonstante zu berechnen.
+\\
+Die Hallkonstante bei einer Schicktdicke des Halbleiters von 1mm ergibt sich also zu:
+
+\begin{equation*}
+   (berechnet) \hspace{2.0cm} \Bar{R_H} = (5.4 \pm 0.1) *10^{-3} \frac{m^3}{C} 
+\end{equation*}
+
+\begin{equation*}
+   (gefittet) \hspace{2.0cm} \Bar{R_H} = (5.4 \pm 0.1) *10^{-3} \frac{m^3}{C}
+\end{equation*}
+
+\\
+Das positive Vorzeichen der Hallkonstante lässt darauf schließen, dass es sich um einen p-dotierten Ge-Kristall handelt und somit um Löcherleitung.
+
+\subsection{Bestimmung der Ladungsträgerkonzentration}
+
+Da wir nun wissen, dass es sich um einen p-dotierten Halbleiter handelt können wir mit der Beziehung aus Gleichung \ref{eq_loecherleitung} die Ladungsträgerkonzentration der Löcher $p$ bestimmen.
+
+\begin{equation*}
+    (negativ) \hspace{2.0cm} p = 1.1778 * 10^{21} m^{-3}
+\end{equation*}
+
+\begin{equation*}
+    (positiv) \hspace{2.0cm} p = 1.1560 * 10^{21} m^{-3}
+\end{equation*}
+
+Diese Werte werden wieder gemittelt und die Unsicherheit wird mit der Standardabweichung bestimmt.
+
+\begin{equation*}
+   (gefittet) \hspace{2.0cm} \Bar{p} = (1.17 \pm 0.02) * 10^{21} m^{-3}
+\end{equation*}
+
+Nun wurden auch mit den Werten aus Tabelle \ref{R/d} die Ladungsträgerkonzetrationen berechnet (Glg.\ref{eq_loecherleitung}) und gemittelt:
+
+\begin{equation*}
+    (berechnet) \hspace{2.0cm} \Bar{p} = (1.16 \pm 0.03) * 10^{21} m^{-3}
+\end{equation*}
+
+Die Unsicherheit wurde wieder mit Hilfe der Standardabweichung bestimmt.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Diskussion}
+
+Die Linearität in den Diagrammen spricht für eine hohe relative Messgenauigkeit. Wie in Kapitel \ref{6_Hallkonstante} schon kurz erwähnt wurde, wird die Messung mit $B = 0 mT$ (-29mT) nicht in die Auswertung mit einbezogen, da der Halleffekt bei fehlendem Magnetfeld nicht auftritt und deshalb hätten auch die daraus erechneten Größen keinen Realitätsbezug. 
+Die gemittelten Werte für die Hallkonstanten (gefittet und berechnet) sind ident, was für eine korrekte Auswertung spricht. Der einzige gefundene Wert für die Hallkonstante von Germanium $[2]$ den ich zum Vergleich heranziehen kann, beträgt:
+
+\begin{equation*}
+    (Referenz) \hspace{1.5cm} R_H = 2000 \frac{cm^3}{As} = 2 * 10^{-3} \frac{m^3}{C}
+\end{equation*}
+
+Dieser weicht etwas von meinen berechneten Werten ab, befindet sich aber in der richtigen Größenordnung. Ein Grund dafür könnte sein, dass die Hallkonstante eine Temperaturabhängige Größe ist und dadurch nur Werte die experimentell bei gleicher Temperatur bestimmt wurden, tatsächlich vergleichbar sind. Leider habe ich es versäumt die Temperatur bei meiner Versuchsdurchführung zu notieren.\\
+Ein weiterer, wahrscheinlich auschlaggebenderer Punkt ist, dass mir die Dicke der Germaniumprobe nicht bekannt ist. Durch geeignete Wahl der Schichtdicke könnte ich mich an den oben genannten Referenzwert beliebig weit annähern. Aus dem Artikel $[2]$ geht auch nicht hervor mit welcher Schichtdicke dort gearbeitet wurde, was das vergleichen der Werte wieder etwas schwer gestaltet. 
+\\\\
+Auch für die Ladungsträgerkonzentration wurde in diesem Artikel $[2]$ ein Referenzwert gefunden:
+
+\begin{equation*}
+    (Referenz) \hspace{1.5cm} p = 3 * 10^{15} cm^{-3} = 3 * 10^{21} m^{-3}
+\end{equation*}
+
+Die Abweichung dieses Referenzwerts von meinen bestimmten Werten lässt sich durch den Unterschied der Hallkonstanten (Referenz und berechnet/gefittet) erklären. Da Ladungsträgerkonzentration und Hallkonstante invers proportional voneinander abhängen, ist hier mein bestimmter Wert kleiner als der Referenzwert, allerdings ist auch dieser in der richtigen Größenordnung. Die von mir bestimmten Werte (berechnet und gefittet) stimmen innerhalb ihrer Unsicherheiten überein.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Zusammenfassung}
+
+Zusammenfassend ergeben sich für dieses Experiment mit einer p-dotierten Germaniumprobe die folgenden Werte:
+
+\begin{table}[!htbp]
+\caption{Zusammenfassung der Messgrößen\\\\
+$R_H$...Hallkonstante\\
+p...Ladungsträgerkonzentration}
+\label{R/d}
+\begin{tabular}{|l||l|l|l|}
+\hline
+Messgröße & berechnet & gefittet & Referenz  \\ \hline\hline
+$R_H$ / $\frac{m^3}{C}$ & (5.4 \pm 0.1) * 10^{-3} & (5.4 \pm 0.1) * 10^{-3} & 2.0 * 10^{-3} \\ \hline
+p / m^{-3} & (1.17 \pm 0.02) * 10^{21} & (1.16 \pm 0.03) * 10^{21} & 3.00 * 10^{21}\\ \hline
+\end{tabular}
+\end{table}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+\section{Literatur}
+
+\begin{itemize}
+     \item[1] Vorbereitungsskript: Prof. Svetlozar Surnev
+     \item[2] https://www.degruyter.com/view/journals/zna/3/1/article-p20.xml?language=en (Abrufdatum 17.09.2020)
+\end{itemize}
+\newpage   
+\listoffigures
+
+
+\end{document}

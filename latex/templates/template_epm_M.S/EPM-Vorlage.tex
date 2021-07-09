@@ -1,0 +1,88 @@
+%Protokoll-Vorlage
+%Martin Steiner
+
+
+\documentclass[11pt]{scrartcl}
+ 
+
+\usepackage{ucs}
+\usepackage[utf8x]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amstext, graphicx}
+\usepackage[ngerman]{babel}
+\usepackage{pdfpages} %zum importieren des Deckblattes
+\usepackage[headsepline]{scrlayer-scrpage}
+\usepackage{lastpage}
+%\usepackage{biblatex} %Literaturverwaltung
+%\addbibresource{literatur.bib} %Literatur-Resourcen
+\pagestyle{scrheadings}
+
+\date{\today{}, Graz}
+\author{Name}
+\title{Titel}
+
+\clearscrheadfoot
+\ihead{Semester \\ \today}
+\chead{Name 1 \\ Name 2}
+\ohead{Kurs \\ Übung}
+\cfoot{\pagemark \, / \, \pageref{LastPage}}
+
+
+\begin{document}
+    \includepdf[]{Deckblatt.pdf} %Insert title page NaWi-Graz
+    \tableofcontents
+    \newpage
+
+    \section*{Anmerkung}
+    \label{sec:anmerkung}
+    Text
+
+    \section{Aufgabenstellung}
+    \label{sec:Aufgabenstellung}
+    text
+    
+%    \subsection{einfügen}
+%    \label{sec:einfügen}
+%    text
+    
+    \section{Voraussetzung \& Grundlagen}
+    \label{sec:voraussetzungen-grundlagen}
+    text 
+
+%    \subsection{einfügen}
+%    \label{sec:einfügen}
+
+    \section{Versuchsanordnung}
+    \label{sec:versuchsandordnung}
+    text
+
+    \section{Geräteliste}
+    \label{sec:geraeteliste}
+    text
+
+    \section{Versuchdurchführung \& Messergebnisse}
+    \label{sec:versuchdurchfuehrung-messergebnisse}
+    text
+
+%    \subsection{einfügen}
+%    \label{sec:einfügen}
+
+    \section{Auswerung}
+    \label{sec:auswertung}
+    text
+
+    %    \subsection{einfügen}
+    %    \label{sec:einfügen}
+
+    \section{Diskussion}
+    \label{sec:diskussion}
+    text
+
+    \section{Zusammenfassung}
+    \label{sec:zusammenfassung}
+    text
+
+    \addsec{Literatur}
+    \label{sec:literatur}
+
+\end{document}

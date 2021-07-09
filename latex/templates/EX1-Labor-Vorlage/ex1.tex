@@ -1,0 +1,131 @@
+\documentclass[11pt]{scrartcl}
+
+% standard packages
+\usepackage[utf8]{inputenc}  % input in UTF-8
+\usepackage[T1]{fontenc}  % output in T1 fonts (westeuropäische Codierung)
+\usepackage{lmodern}  % latin modern fonts
+\usepackage[ngerman]{babel}  % deutsches Sprachpaket, neue Rechtschreibung
+
+% Seitensetup
+\usepackage{scrlayer-scrpage}  % Seitenformatierung durch KOMA-interne Optionen
+\usepackage[top=4cm, bottom=4cm]{geometry}  % Seitengeometrie (kann durch KOMA ersetzt werden, hab ich aber nicht geschafft)
+\usepackage[hypcap=false]{caption, subcaption}  % caption editing - hypcap warning with hyperref
+\usepackage{array}  % table editing
+
+% additional packages
+\usepackage{amsmath, amssymb, amstext}  % math packages (American Math Society)
+\usepackage{icomma}  % Kommata in Dezimalzahlen verursachen keinen Abstand mehr
+\usepackage{graphicx}  % Bilder einfügen
+\usepackage{pdfpages}  % PDF als vollständige Seiten einfügen
+\usepackage{lastpage}  % referenziert die letzte Seite
+\usepackage[separate-uncertainty=true]{siunitx}  % bessere Darstellung von Einheiten
+%\usepackage{datatool}
+\usepackage[hidelinks]{hyperref}  % hyperref verlinkt Referenzen - hidelinks entfernt borders um links
+
+% package setups
+% Kopf- und Fußzeile durch KOMA
+\pagestyle{scrheadings}  % KOMA darf entscheiden
+\clearpairofpagestyles  % reset
+\setkomafont{pageheadfoot}{\normalfont}  % Standardschrift in Kopf- und Fußzeile
+%\setlength{\headheight}{27.2pt}  % benötigte Höhe Kopfzeile (warning von scrlayer-scrpage, wird aber automatisch so gerendert, falls diese Option weggelassen wird)
+\ihead{TITEL HIER EINFÜGEN}  % Kopf links %Todo Titel ändern
+\chead{\textsc{Timberman} Markus}  % Kopf Mitte %Todo Name ändern
+\ohead{31.02.2000}  % Kopf rechts %Todo Datum ändern
+\cfoot{\pagemark \, / \pageref{LastPage}}  % Fuß Mitte
+
+% Table of Contents
+\DeclareTOCStyleEntry{dottedtocline}{section}  % KOMA intern - Inhaltsverzeichnis mit Punkten (nur sections)
+
+% SI
+\sisetup{locale = DE}  % deutschsprachige SI-Konvention
+
+% array
+\renewcommand{\arraystretch}{1.2}
+
+\begin{document}
+
+%\includepdf{Deckblatt_print.pdf} % Todo Deckblatt ausfüllen
+
+\tableofcontents
+\newpage
+
+\section{Aufgabenstellung}
+\label{sec:aufgabenstellung}
+
+\section{Voraussetzungen und Grundlagen}
+\label{sec:voraussetzungen_grundlagen}
+Die folgende Gleichung \ref{eq:bewegungsgl} hab i wie alles andere auch von \cite[S. 69]{ref:Beispiel} geklaut.
+\begin{equation}
+    \label{eq:bewegungsgl}
+        m \cdot g \cdot \sin(\varphi) = -m \cdot l \cdot \ddot \varphi 
+\end{equation}
+
+\section{Versuchsanordnung}
+\label{sec:versuchsanordnung}
+
+% \begin{figure}[htbp] %Todo add graphic
+%     \centering
+%     \caption[Versuchsanordnung]{Bla Bla}
+%     \label{fig:Versuchsanordnung}  % after caption for right numbering
+    
+%     \includegraphics[width=0.35\textwidth]{NAME.png}
+% \end{figure}
+
+\section{Geräteliste}
+\label{sec:geraeteliste}
+\begin{center}
+    \captionof{table}[Geräteliste]{Verwendete Geräte}  % optionales Argument wird in Verzeichnissen verwendet, essentielles Argument direkt im Text
+    \label{tab:geraeteliste}
+    \vspace{3mm}  % vertical space 3 mm
+    \begin{tabular}{|c|c|c|c|}
+        \hline
+        Gerät           & Hersteller                & Modell        & Genauigkeitsklasse    \\ \hline
+        Der Gerät    & Knoll GmbH    & Studentenzerstörer & $\infty$  \\ \hline
+        Der Gerät    & Knoll GmbH    & Studentenzerstörer & $\infty$  \\ \hline
+        \hline
+    \end{tabular}
+\end{center}
+
+\section{Versuchsdurchführung und Messergebnisse}
+\label{sec:versuchsdurchfuehrung_messergebnisse}
+% \begin{center}
+%     \captionof{table}[MESSUNG]{Bla Bla}%Ausfüllen
+%     \label{tab:messergebnisse}
+
+%     \vspace{3mm}
+%     \begin{tabular}{|cc|cc|cc|}
+%         \hline
+%         n   & $10 \cdot T$  & n  & $10 \cdot T$ & n  & $10 \cdot T$ \\ \hline
+%         1   & 29,12         & 11 & 29,11        & 21 & 29,06        \\ \hline
+%         2   & 29,06         & 12 & 29,03        & 22 & 29,09        \\ \hline
+%         3   & 29,16         & 13 & 29,06        & 23 & 29,06        \\ \hline
+%         4   & 29,04         & 14 & 29,13        & 24 & 29,11        \\ \hline
+%         5   & 29,04         & 15 & 29,03        & 25 & 29,08        \\ \hline
+%         6   & 29,19         & 16 & 29,07        & 26 & 29,04        \\ \hline
+%         7   & 29,13         & 17 & 29,06        & 27 & 29,04        \\ \hline
+%         8   & 29,03         & 18 & 29,08        & 28 & 29,04        \\ \hline
+%         9   & 29,10         & 19 & 29,06        & 29 & 29,03        \\ \hline
+%         10  & 29,08         & 20 & 29,00        & 30 & 29,03        \\ \hline
+%         \hline
+%     \end{tabular}
+% \end{center}
+\section{Auswertung}
+\label{sec:auswertung}
+
+\section{Diskussion und Zusammenfassung}
+\label{sec:diskussion_zusammenfassung}
+% %Aufzählung was scheiße glaufen is
+\begin{itemize}
+    \item Mein Experiment hat ned funktioniert
+    \item Irgendwas is da gewaltig daneben gangen
+\end{itemize}
+
+% Literaturtabelle
+\bibliographystyle{unsrt}
+\bibliography{Literatur} %Todo .bib befüllen zb.: mit JabRef (Empfehlung der Redaktion)
+
+\listoffigures
+
+\listoftables
+
+\end{document}

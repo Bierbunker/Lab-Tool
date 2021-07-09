@@ -1,0 +1,42 @@
+\documentclass[11pt]{scrartcl}
+ 
+\usepackage{amsmath}
+\usepackage[ngerman, num]{isodate}
+\usepackage{pdfpages} %zum importieren des Deckblattes
+\usepackage{scrlayer-scrpage} %für die Kopfzeile
+
+
+
+\begin{document}
+    %Insert title page NaWi-Graz
+    \includepdf[]{Deckblatt.pdf}
+    \tableofcontents
+    \newpage
+    \section{Test}
+    test text
+    \subsection{Hello}
+    hallo, Datamanagement
+    % \begin{titlepage}
+    %     \begin{center}
+    %             \vspace*{1cm}
+        
+    %             \huge
+    %             \textbf{Laborübung Experimentalphysik 1}
+    %             \vspace*{0.75cm}
+        
+    %             \Large
+    %             %Experimenttitel
+    %             Titel des Experiments
+    %             \vspace*{1.25cm}
+    %             \large
+    %             \textbf{Wachmann, Zach}
+    %             \vspace*{15 cm}
+                
+
+    %             Graz, \today
+
+
+    %     \end{center}
+
+    % \end{titlepage}
+\end{document}

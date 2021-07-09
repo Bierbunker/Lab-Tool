@@ -1,0 +1,1 @@
+kompiliert nicht, da die .bib-references fehlen, dient nur Anschauungszwecken!
