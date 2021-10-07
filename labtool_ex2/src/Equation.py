@@ -47,7 +47,7 @@ class Equation:
 
     def error_func(self):
         vs = list(ordered(self.expr.free_symbols))
-        gradient = lambda f, vs: Matrix([f]).jacobian(vs)
+        def gradient(f, vs): return Matrix([f]).jacobian(vs)
         e_func = 0
         errs = ' '.join([f"d{s}" for s in vs])
         er = sympy.symbols(errs)
@@ -58,7 +58,8 @@ class Equation:
     def load_data(self, path):
         df = pandas.read_csv(path, header=[0, 1], skipinitialspace=True)
         # df.set_labels(["type","variable"])
-        df.columns = pandas.MultiIndex.from_tuples(df.columns, names=["type", "variable"])
+        df.columns = pandas.MultiIndex.from_tuples(
+            df.columns, names=["type", "variable"])
         self.raw_data = df
 
     def expr_to_np(self, esp):
@@ -89,7 +90,7 @@ class Equation:
             return len(myStr[0]) - 1  # to compenstate for the decimal point
         else:
             # put it in e format and return the result of that
-            ### NOTE: because of the 8 below, it may do crazy things when it parses 9 sigfigs
+            # NOTE: because of the 8 below, it may do crazy things when it parses 9 sigfigs
             n = ('%.*e' % (8, float(x))).split('e')
             # remove and count the number of removed user added zeroes. (these are sig figs)
             if '.' in x:
@@ -178,10 +179,12 @@ class Equation:
                     df[sem.name] = sem.min()
                     df.reset_index(drop=True, inplace=True)
                 else:
-                    df = pandas.concat([mean, std, sem], axis=1).reset_index(drop=True)
+                    df = pandas.concat(
+                        [mean, std, sem], axis=1).reset_index(drop=True)
                 self.data = pandas.concat([self.data, df], axis=1)
             else:
-                self.data = pandas.concat([self.data, filtered_vardata, filtered_errdata], axis=1)
+                self.data = pandas.concat(
+                    [self.data, filtered_vardata, filtered_errdata], axis=1)
 
         self.data.dropna(inplace=True)
 
@@ -194,7 +197,8 @@ class Equation:
         for c in self.variables.split():
             reg = rf"^{c}$"
             if raw_data:
-                filt = self.raw_data.droplevel("type", axis=1).filter(regex=reg)
+                filt = self.raw_data.droplevel(
+                    "type", axis=1).filter(regex=reg)
             else:
                 filt = self.data.filter(regex=reg)
             df = pandas.concat([df, filt], axis=1)
@@ -209,7 +213,8 @@ class Equation:
         for c in self.variables.split():
             reg = rf"^d{c}$"
             if raw_data:
-                filt = self.raw_data.droplevel("type", axis=1).filter(regex=reg)
+                filt = self.raw_data.droplevel(
+                    "type", axis=1).filter(regex=reg)
             else:
                 filt = self.data.filter(regex=reg)
             df = pandas.concat([df, filt], axis=1)
@@ -224,7 +229,8 @@ class Equation:
         for c in self.variables.split():
             reg = rf"^(d)?{c}$"
             if raw_data:
-                filt = self.raw_data.droplevel("type", axis=1).filter(regex=reg)
+                filt = self.raw_data.droplevel(
+                    "type", axis=1).filter(regex=reg)
             else:
                 filt = self.data.filter(regex=reg)
             df = pandas.concat([df, filt], axis=1)
@@ -271,11 +277,13 @@ class Equation:
         fig, ax = plt.subplots()
         bins = np.linspace(ser.min(), ser.max(), bins + 1)
         ser.hist(ax=ax, bins=bins)
-        y = ((1 / (np.sqrt(2 * np.pi) * ser.std())) * np.exp(-0.5 * (1 / ser.std() * (bins - ser.mean())) ** 2))
+        y = ((1 / (np.sqrt(2 * np.pi) * ser.std())) *
+             np.exp(-0.5 * (1 / ser.std() * (bins - ser.mean())) ** 2))
         ax.plot(bins, y, '--')
         ax.set_xlabel(rf"${ser.name}$")
         ax.set_ylabel("$N$")
-        ax.set_title(rf"Histogramm von ${name}$: $\mu={ser.mean()}$, $\sigma={round_up(ser.std(), 4)}$")
+        ax.set_title(
+            rf"Histogramm von ${name}$: $\mu={ser.mean()}$, $\sigma={round_up(ser.std(), 4)}$")
         fig.tight_layout()
         plt.savefig("histo.png")
         with open(f'../data/histo_data_{ser.name}.tex', 'w') as tf:
@@ -342,7 +350,8 @@ class Equation:
         # plt.errorbar(raw_x, raw_y, yerr=self.data[f"d{y}"], fmt="none", capsize=3)
 
         if withfit:
-            popt, pcov = curve_fit(self.objective, raw_x, raw_y, p0=[-70, 0.025, -1.5, 260])
+            popt, pcov = curve_fit(self.objective, raw_x,
+                                   raw_y, p0=[-70, 0.025, -1.5, 260])
             stdevs = np.sqrt(np.diag(pcov))
             print(popt)
             print(popt + stdevs)
@@ -350,8 +359,10 @@ class Equation:
             y_fit = self.objective(x_data, *popt)
             plt.plot(x_data, y_fit, c="r", label="Fit")
             if show_lims:
-                plt.plot(x_data, self.objective(x_data, *(popt + stdevs)), label="Obere Schranke")
-                plt.plot(x_data, self.objective(x_data, *(popt - stdevs)), label="Untere Schranke")
+                plt.plot(x_data, self.objective(
+                    x_data, *(popt + stdevs)), label="Obere Schranke")
+                plt.plot(x_data, self.objective(
+                    x_data, *(popt - stdevs)), label="Untere Schranke")
             chisq = chisq_stat(self.objective, self.data[x], self.data[y], popt, self.data[rf"d{y}"]) / len(
                 self.data[x])
             deci = 2
@@ -398,12 +409,14 @@ class Equation:
         reg = LinearRegression().fit(X, Y)
         x_fit = np.linspace(min(X), max(X), 100)
         y_fit = reg.predict(x_fit)
-        popt, pcov = curve_fit(linear_func, x, y, p0=9, sigma=self.data[f"d{y.name}"] / 10 * 2, absolute_sigma=True)
+        popt, pcov = curve_fit(
+            linear_func, x, y, p0=9, sigma=self.data[f"d{y.name}"] / 10 * 2, absolute_sigma=True)
         stdevs = np.sqrt(np.diag(pcov))
         deci = 2
         for val, err in zip(popt, stdevs):
             plt.annotate(
-                rf"$g = {format(round(val, deci), f'.{deci}f')} \pm {round_up(err, deci)}" + r"\frac{\mathrm{m}}{\mathrm{s}^{2}}$",
+                rf"$g = {format(round(val, deci), f'.{deci}f')} \pm {round_up(err, deci)}" +
+                r"\frac{\mathrm{m}}{\mathrm{s}^{2}}$",
                 xy=(min(x), min(y_fit)),
                 bbox={'facecolor': '#616161', 'alpha': 0.85}, xytext=(2.00 * min(x), 1.05 * min(y_fit)),
                 fontsize=13, arrowprops=dict(arrowstyle="-"))
