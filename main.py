@@ -14,8 +14,7 @@ from matplotlib import pyplot as plt
 from scipy.integrate import trapz
 from scipy.integrate import simps
 
-from Project import Project
-from Project import round_up
+from labtool_ex2 import Project
 
 
 def make_project_stuff(project, start, end):
@@ -27,7 +26,8 @@ def make_project_stuff(project, start, end):
     print("**************************************************************\n\n")
     project.data = project.data - (project.data['t'].iloc[0], 0, 0, 0)
     project.working_dfs.append(project.data.reset_index(drop=True))
-    project.plot_data("t", "wx", labels=["Zeit / s", r"$\omega_x$ / rad s$^{-1}$"], withfit=True)
+    project.plot_data("t", "wx", labels=[
+                      "Zeit / s", r"$\omega_x$ / rad s$^{-1}$"], withfit=True)
 
 
 # Press the green button in the gutter to run the script.
@@ -42,7 +42,8 @@ if __name__ == '__main__':
     category = ["Rutschzeit"] * len(P.data['t'])
     ax.scatter(P.data["t"], category, c="b", label="Messwerte")
     ax.scatter(P.data["t"].mean(), category[0], c="r", label="Mittelwert")
-    ax.errorbar(P.data["t"].mean(), [category[0]], c="r", capsize=3, xerr=P.data["t"].sem())
+    ax.errorbar(P.data["t"].mean(), [category[0]],
+                c="r", capsize=3, xerr=P.data["t"].sem())
     fig.suptitle("Relative Darstellung der Rutschzeitmesswerte")
     ax.legend()
 
@@ -58,7 +59,8 @@ if __name__ == '__main__':
     category = ["Fallzeit"] * len(P.data['ft'])
     ax.scatter(P.data["ft"], category, c="b", label="Messwerte")
     ax.scatter(P.data["ft"].mean(), category[0], c="r", label="Mittelwert")
-    ax.errorbar(P.data["ft"].mean(), [category[0]], c="r", capsize=3, xerr=P.data["ft"].sem())
+    ax.errorbar(P.data["ft"].mean(), [category[0]],
+                c="r", capsize=3, xerr=P.data["ft"].sem())
     fig.suptitle("Relative Darstellung der Fallzeitmesswerte")
     ax.legend()
 

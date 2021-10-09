@@ -1,3 +1,3 @@
-import labtool_ex2
+import labtool_ex2 as lt
 
-print(dir())
+print(dir(lt))

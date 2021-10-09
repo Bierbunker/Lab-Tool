@@ -34,6 +34,8 @@ from scipy.integrate import trapz
 
 from .Equation import Equation  # relative import
 
+__all__ = ["Project"]
+
 printing.init_printing(use_latex=True)
 
 

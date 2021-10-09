@@ -2,28 +2,29 @@
 
 # Press Shift+F10 to execute it or replace it with your code.
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
-import numpy as np
-import scipy as sp
-import sympy
-import pandas
-import matplotlib.pyplot as plt
-from sklearn.linear_model import LinearRegression
-from pprint import pprint
-from math import floor
-from math import sqrt
-from sympy.interactive import printing
-from scipy.optimize import curve_fit
-from scipy.stats import chisquare
 
-import math
-import re
-
-from sympy import Matrix, hessian, lambdify
-from sympy import latex
-from sympy.utilities.iterables import ordered
-from sympy import sympify
-from scipy.integrate import simps
 from scipy.integrate import trapz
+from scipy.integrate import simps
+from sympy import sympify
+from sympy.utilities.iterables import ordered
+from sympy import latex
+from sympy import Matrix, hessian, lambdify
+import re
+import math
+from scipy.stats import chisquare
+from scipy.optimize import curve_fit
+from sympy.interactive import printing
+from math import sqrt
+from math import floor
+from pprint import pprint
+from sklearn.linear_model import LinearRegression
+import matplotlib.pyplot as plt
+import pandas
+import sympy
+import scipy as sp
+import numpy as np
+__all__ = ["Equation"]
+
 
 printing.init_printing(use_latex=True)
 

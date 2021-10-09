@@ -1,4 +1,4 @@
 __all__ = ["Equation", "Project"]
 
-from .src.Equation import Equation
-from .src.Project import Project
+from .Equation import *
+from .Project import *
