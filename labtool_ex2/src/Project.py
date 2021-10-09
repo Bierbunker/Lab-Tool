@@ -61,9 +61,10 @@ class Project:
         self.local_ledger = dict()
         self.raw_data = pandas.DataFrame(data=None)
         self.data = pandas.DataFrame(data=None)
-        plt.rcParams.update({'font.size': font})
-        plt.rcParams.update({'xtick.labelsize': 9})
-        plt.rcParams.update({'ytick.labelsize': 9})
+        self.dfs = dict()
+        plt.rcParams.update({"font.size": font})
+        plt.rcParams.update({"xtick.labelsize": 9})
+        plt.rcParams.update({"ytick.labelsize": 9})
 
         p = Path(f"./Output/{name}")
         p.mkdir(exist_ok=True)
@@ -74,11 +75,13 @@ class Project:
             self.data = pandas.DataFrame(data=None)
         df = pandas.read_csv(path, header=[0, 1], skipinitialspace=True)
         df.columns = pandas.MultiIndex.from_tuples(
-            df.columns, names=["type", "variable"])
+            df.columns, names=["type", "variable"]
+        )
         self.load_data_counter += 1
         self.raw_data = df.astype(float)
         if clean:
-            self.clean_dataset()
+            name = Path(path).stem
+            self.clean_dataset(name=name)
 
     def clean_dataset(self, use_min=False):
         for var in self.raw_data.droplevel("type", axis=1).columns:
@@ -107,12 +110,14 @@ class Project:
                         df[sem.name] = sem.min()
                         df.reset_index(drop=True, inplace=True)
                     else:
-                        df = pandas.concat(
-                            [mean, std, sem], axis=1).reset_index(drop=True)
+                        df = pandas.concat([mean, std, sem], axis=1).reset_index(
+                            drop=True
+                        )
                     self.data = pandas.concat([self.data, df], axis=1)
                 else:
                     self.data = pandas.concat(
-                        [self.data, filtered_vardata, filtered_errdata], axis=1)
+                        [self.data, filtered_vardata, filtered_errdata], axis=1
+                    )
             else:
                 continue
 
@@ -138,8 +143,7 @@ class Project:
         for c in self.variables.split():
             reg = rf"^{c}$"
             if raw_data:
-                filt = self.raw_data.droplevel(
-                    "type", axis=1).filter(regex=reg)
+                filt = self.raw_data.droplevel("type", axis=1).filter(regex=reg)
             else:
                 filt = self.data.filter(regex=reg)
             df = pandas.concat([df, filt], axis=1)
@@ -154,8 +158,7 @@ class Project:
         for c in self.variables.split():
             reg = rf"^d{c}$"
             if raw_data:
-                filt = self.raw_data.droplevel(
-                    "type", axis=1).filter(regex=reg)
+                filt = self.raw_data.droplevel("type", axis=1).filter(regex=reg)
             else:
                 filt = self.data.filter(regex=reg)
             df = pandas.concat([df, filt], axis=1)
@@ -170,8 +173,7 @@ class Project:
         for c in self.variables.split():
             reg = rf"^(d)?{c}$"
             if raw_data:
-                filt = self.raw_data.droplevel(
-                    "type", axis=1).filter(regex=reg)
+                filt = self.raw_data.droplevel("type", axis=1).filter(regex=reg)
             else:
                 filt = self.data.filter(regex=reg)
             df = pandas.concat([df, filt], axis=1)
@@ -218,16 +220,20 @@ class Project:
         fig, ax = plt.subplots()
         bins = np.linspace(ser.min(), ser.max(), bins + 1)
         ser.hist(ax=ax, bins=bins)
-        y = ((1 / (np.sqrt(2 * np.pi) * ser.std())) *
-             np.exp(-0.5 * (1 / ser.std() * (bins - ser.mean())) ** 2))
-        ax.plot(bins, y, '--')
+        y = (1 / (np.sqrt(2 * np.pi) * ser.std())) * np.exp(
+            -0.5 * (1 / ser.std() * (bins - ser.mean())) ** 2
+        )
+        ax.plot(bins, y, "--")
         ax.set_xlabel(rf"${ser.name}$")
         ax.set_ylabel("$N$")
         ax.set_title(
-            rf"Histogramm von ${name}$: $\mu={ser.mean()}$, $\sigma={round_up(ser.std(), 4)}$")
+            rf"Histogramm von ${name}$: $\mu={ser.mean()}$, $\sigma={round_up(ser.std(), 4)}$"
+        )
         fig.tight_layout()
         plt.savefig("histo.png")
-        with open(f'../data/histo_data_{ser.name}_mess_nr_{self.load_data_counter}', 'w') as tf:
+        with open(
+            f"../data/histo_data_{ser.name}_mess_nr_{self.load_data_counter}", "w"
+        ) as tf:
             tf.write(ser.rename(rf"${ser.name}$").to_latex(escape=False))
 
     """
@@ -253,7 +259,7 @@ class Project:
             colnames.append(colname)
 
         df.columns = colnames
-        with open(f'../data/messreihe_{df.name}.tex', 'w') as tf:
+        with open(f"../data/messreihe_{df.name}.tex", "w") as tf:
             tf.write(df.to_latex(escape=False))
 
     def objective(self, beta, t):
@@ -277,15 +283,61 @@ class Project:
             plt.yscale(scaling)
             plt.xscale(scaling)
         else:
-            plt.yscale('linear')
-            plt.xscale('linear')
+            plt.yscale("linear")
+            plt.xscale("linear")
         x_data = np.linspace(raw_x.min(), raw_x.max(), 1000)
-        plt.scatter(raw_x, raw_y, c="b", marker=".", s=39.0, label="Data")
-        # plt.errorbar(raw_x, raw_y, yerr=self.data[f"d{y}"], fmt="none", capsize=3)
+        # length = len(raw_x)
+        # middle_index = length // 2
+
+        # plt.scatter(
+        #     raw_x[:middle_index],
+        #     raw_y[:middle_index],
+        #     c="b",
+        #     marker=".",
+        #     s=39.0,
+        #     label="Blau Data",
+        # )
+        # plt.scatter(
+        #     raw_x[middle_index:],
+        #     raw_y[middle_index:],
+        #     c="r",
+        #     marker=".",
+        #     s=39.0,
+        #     label="Rot Data",
+        # )
+        plt.scatter(
+            raw_x,
+            raw_y,
+            c="r",
+            marker=".",
+            s=39.0,
+            label="Rot Data",
+        )
+        if errors:
+            plt.errorbar(
+                raw_x,
+                raw_y,
+                xerr=self.data[f"d{x}"],
+                yerr=self.data[f"d{y}"],
+                fmt="none",
+                capsize=3,
+            )
+
+        # y_blau_fit = 0.61 * 470 * 10 ** (-6) / x_data
+        # y_red_fit = 0.61 * 635 * 10 ** (-6) / x_data
+        # plt.plot(x_data, y_blau_fit, "b-", label="Blau Theoretisch")
+        # # plt.plot(x_data, y_blau_fit, "b-", label="Blau Theoretisch")
+        # plt.plot(x_data, y_red_fit, "r-", label="Red Theoretisch")
 
         if withfit:
-            mod = ExpressionModel('-amp * exp(-x/l) * (cos(x*phase + shift)/l + phase * sin(x*phase + shift))',
-                                  independent_vars=["x"])
+            # mod = ExpressionModel(
+            #     "-amp * exp(-x/l) * (cos(x*phase + shift)/l + phase * sin(x*phase + shift))",
+            #     independent_vars=["x"],
+            # )
+            mod = ExpressionModel(
+                "0.61 * l / NA",
+                independent_vars=["x"],
+            )
             # pars = mod.guess(raw_y, x=raw_x)
             pars = mod.make_params(amp=1.5, l=20, phase=7, shift=0.1)
             # print(raw_y.iloc[::2])
@@ -358,18 +410,29 @@ class Project:
         #         fontsize=13, arrowprops=dict(arrowstyle="-"))
         # plt.show()
         plt.savefig(
-            f"./Output/{self.name}/fit_of_{x}_{y}_mess_nr_{self.load_data_counter}.png", dpi=400)
+            f"./Output/{self.name}/fit_of_{x}_{y}_mess_nr_{self.load_data_counter}.png",
+            dpi=400,
+        )
         # print(chisq(objective,self.data[x],self.data[y]/10,popt,self.data[f"d{y}"]/10))
         # print(chisq_stat(objective,self.data[x],self.data[y]/10,popt,self.data[rf"\sigma_{{{y}}}"]/10))
 
     # need to be changed to be more general currently it is tailored to g Erdbeschleunigung
-    def plot_linear_reg(self, x, y, labels, show_lims=False, xerr=False, offset=[0, 0], units=[r"$s^2$", r"$s^2$"],
-                        title=''):
+    def plot_linear_reg(
+        self,
+        x,
+        y,
+        labels,
+        show_lims=False,
+        xerr=False,
+        offset=[0, 0],
+        units=[r"$s^2$", r"$s^2$"],
+        title="",
+    ):
         """Calculates the linear regression of data given and plot it
 
-          :x: TODO
-          :y: TODO
-          :returns: TODO
+        :x: TODO
+        :y: TODO
+        :returns: TODO
 
         """
         plt.cla()
@@ -377,10 +440,15 @@ class Project:
         try:
             if xerr:
                 plt.errorbar(
-                    x, y, xerr=self.data[f"d{x.name}"], yerr=self.data[f"d{y.name}"], fmt="none", capsize=3)
+                    x,
+                    y,
+                    xerr=self.data[f"d{x.name}"],
+                    yerr=self.data[f"d{y.name}"],
+                    fmt="none",
+                    capsize=3,
+                )
             else:
-                plt.errorbar(
-                    x, y, yerr=self.data[f"d{y.name}"], fmt="none", capsize=3)
+                plt.errorbar(x, y, yerr=self.data[f"d{y.name}"], fmt="none", capsize=3)
         except Exception as e:
             print(e)
 
@@ -388,20 +456,23 @@ class Project:
         lmod = LinearModel()
         pars = lmod.guess(y, x=x)
         out = lmod.fit(y, pars, x=x)
-        plt.plot(x_fit, out.eval(x=x_fit), 'r-', label='best fit')
+        plt.plot(x_fit, out.eval(x=x_fit), "r-", label="best fit")
         print(out.fit_report(min_correl=0.25))
         print(out.values)
         for i, (name, param) in enumerate(out.params.items()):
-            print('{:7s} {:11.5f} {:11.5f}'.format(
-                name, param.value, param.stderr))
+            print("{:7s} {:11.5f} {:11.5f}".format(name, param.value, param.stderr))
             deci = -orderOfMagnitude(param.stderr)
+            print(deci)
+            if deci < 0:
+                deci = 1
             plt.text(
-                s=rf"${name} = {format(round(param.value, deci), f'.{deci}f')} \pm {round_up(param.stderr, deci)}$ " +
-                  units[i],
-                bbox={'facecolor': '#616161', 'alpha': 0.85},
+                s=rf"${name} = {format(round(param.value, deci), f'.{deci}f')} \pm {round_up(param.stderr, deci)}$ "
+                + units[i],
+                bbox={"facecolor": "#616161", "alpha": 0.85},
                 x=(max(x) - min(x)) / 100 * (5 + offset[0]) + min(x),
                 y=(max(y) - min(y)) * (offset[1] / 100 + (i + 1) / 7) + min(y),
-                fontsize=10)
+                fontsize=10,
+            )
 
         if show_lims:
             upper = Parameters()
@@ -409,10 +480,8 @@ class Project:
             for name, param in out.params.items():
                 upper.add(name, value=(param.value + param.stderr))
                 lower.add(name, value=(param.value - param.stderr))
-            plt.plot(x_fit, out.eval(params=upper, x=x_fit),
-                     label="Obere Schranke")
-            plt.plot(x_fit, out.eval(params=lower, x=x_fit),
-                     label="Untere Schranke")
+            plt.plot(x_fit, out.eval(params=upper, x=x_fit), label="Obere Schranke")
+            plt.plot(x_fit, out.eval(params=lower, x=x_fit), label="Untere Schranke")
         # plt.annotate(
         #     rf"${name} = {format(round(param.value, deci), f'.{deci}f')} \pm {round_up(param.stderr, deci)}" + r"\frac{\mathrm{m}}{\mathrm{s}^{2}}$",
         #     xy=(x[0], y[0]),
@@ -492,7 +561,8 @@ class Project:
         plt.legend(loc=0)
         # plt.show()
         plt.savefig(
-            f"lin_reg_{x.name}_{y.name}_messreihe_{self.load_data_counter}.png", dpi=400)
+            f"lin_reg_{x.name}_{y.name}_messreihe_{self.load_data_counter}.png", dpi=400
+        )
 
     def chisq_stat(self, f, x_data, y_data, popt, sigma):
         prediction = f(x_data, *popt)
@@ -557,6 +627,8 @@ def linear_func(x, g):
     #
     # P.data = P.data[(2 < P.data.f) & (P.data.f < 7)]
     # P.plot_data("f", "Vf", labels=["f / s$-1$", "V(f) / cm$^3$"])
+
+
 #
 #    #print(g.raw_data)
 #    print(latex(g.expr))
