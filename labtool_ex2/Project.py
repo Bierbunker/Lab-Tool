@@ -33,11 +33,8 @@ from scipy.integrate import simps
 from scipy.integrate import trapz
 
 from .Equation import Equation  # relative import
-<<<<<<< HEAD:labtool_ex2/Project.py
 
 __all__ = ["Project"]
-=======
->>>>>>> 34af142ca809a5ddf78a65fbd6fb2774c07b17bd:labtool_ex2/src/Project.py
 
 printing.init_printing(use_latex=True)
 
