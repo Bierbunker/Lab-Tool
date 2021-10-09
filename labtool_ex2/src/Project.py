@@ -32,7 +32,7 @@ from sympy import sympify
 from scipy.integrate import simps
 from scipy.integrate import trapz
 
-from Equation import Equation
+from .Equation import Equation  # relative import
 
 printing.init_printing(use_latex=True)
 
@@ -73,7 +73,8 @@ class Project:
         if loadnew:
             self.data = pandas.DataFrame(data=None)
         df = pandas.read_csv(path, header=[0, 1], skipinitialspace=True)
-        df.columns = pandas.MultiIndex.from_tuples(df.columns, names=["type", "variable"])
+        df.columns = pandas.MultiIndex.from_tuples(
+            df.columns, names=["type", "variable"])
         self.load_data_counter += 1
         self.raw_data = df.astype(float)
         if clean:
@@ -106,10 +107,12 @@ class Project:
                         df[sem.name] = sem.min()
                         df.reset_index(drop=True, inplace=True)
                     else:
-                        df = pandas.concat([mean, std, sem], axis=1).reset_index(drop=True)
+                        df = pandas.concat(
+                            [mean, std, sem], axis=1).reset_index(drop=True)
                     self.data = pandas.concat([self.data, df], axis=1)
                 else:
-                    self.data = pandas.concat([self.data, filtered_vardata, filtered_errdata], axis=1)
+                    self.data = pandas.concat(
+                        [self.data, filtered_vardata, filtered_errdata], axis=1)
             else:
                 continue
 
@@ -135,7 +138,8 @@ class Project:
         for c in self.variables.split():
             reg = rf"^{c}$"
             if raw_data:
-                filt = self.raw_data.droplevel("type", axis=1).filter(regex=reg)
+                filt = self.raw_data.droplevel(
+                    "type", axis=1).filter(regex=reg)
             else:
                 filt = self.data.filter(regex=reg)
             df = pandas.concat([df, filt], axis=1)
@@ -150,7 +154,8 @@ class Project:
         for c in self.variables.split():
             reg = rf"^d{c}$"
             if raw_data:
-                filt = self.raw_data.droplevel("type", axis=1).filter(regex=reg)
+                filt = self.raw_data.droplevel(
+                    "type", axis=1).filter(regex=reg)
             else:
                 filt = self.data.filter(regex=reg)
             df = pandas.concat([df, filt], axis=1)
@@ -165,7 +170,8 @@ class Project:
         for c in self.variables.split():
             reg = rf"^(d)?{c}$"
             if raw_data:
-                filt = self.raw_data.droplevel("type", axis=1).filter(regex=reg)
+                filt = self.raw_data.droplevel(
+                    "type", axis=1).filter(regex=reg)
             else:
                 filt = self.data.filter(regex=reg)
             df = pandas.concat([df, filt], axis=1)
@@ -212,11 +218,13 @@ class Project:
         fig, ax = plt.subplots()
         bins = np.linspace(ser.min(), ser.max(), bins + 1)
         ser.hist(ax=ax, bins=bins)
-        y = ((1 / (np.sqrt(2 * np.pi) * ser.std())) * np.exp(-0.5 * (1 / ser.std() * (bins - ser.mean())) ** 2))
+        y = ((1 / (np.sqrt(2 * np.pi) * ser.std())) *
+             np.exp(-0.5 * (1 / ser.std() * (bins - ser.mean())) ** 2))
         ax.plot(bins, y, '--')
         ax.set_xlabel(rf"${ser.name}$")
         ax.set_ylabel("$N$")
-        ax.set_title(rf"Histogramm von ${name}$: $\mu={ser.mean()}$, $\sigma={round_up(ser.std(), 4)}$")
+        ax.set_title(
+            rf"Histogramm von ${name}$: $\mu={ser.mean()}$, $\sigma={round_up(ser.std(), 4)}$")
         fig.tight_layout()
         plt.savefig("histo.png")
         with open(f'../data/histo_data_{ser.name}_mess_nr_{self.load_data_counter}', 'w') as tf:
@@ -349,7 +357,8 @@ class Project:
         #         bbox={'facecolor': '#616161', 'alpha': 0.85}, xytext=(2.00 * min(x_data), 1.25 * min(y_fit)),
         #         fontsize=13, arrowprops=dict(arrowstyle="-"))
         # plt.show()
-        plt.savefig(f"./Output/{self.name}/fit_of_{x}_{y}_mess_nr_{self.load_data_counter}.png", dpi=400)
+        plt.savefig(
+            f"./Output/{self.name}/fit_of_{x}_{y}_mess_nr_{self.load_data_counter}.png", dpi=400)
         # print(chisq(objective,self.data[x],self.data[y]/10,popt,self.data[f"d{y}"]/10))
         # print(chisq_stat(objective,self.data[x],self.data[y]/10,popt,self.data[rf"\sigma_{{{y}}}"]/10))
 
@@ -367,9 +376,11 @@ class Project:
         plt.scatter(x, y, c="b", marker=".", label="Data")
         try:
             if xerr:
-                plt.errorbar(x, y, xerr=self.data[f"d{x.name}"], yerr=self.data[f"d{y.name}"], fmt="none", capsize=3)
+                plt.errorbar(
+                    x, y, xerr=self.data[f"d{x.name}"], yerr=self.data[f"d{y.name}"], fmt="none", capsize=3)
             else:
-                plt.errorbar(x, y, yerr=self.data[f"d{y.name}"], fmt="none", capsize=3)
+                plt.errorbar(
+                    x, y, yerr=self.data[f"d{y.name}"], fmt="none", capsize=3)
         except Exception as e:
             print(e)
 
@@ -381,7 +392,8 @@ class Project:
         print(out.fit_report(min_correl=0.25))
         print(out.values)
         for i, (name, param) in enumerate(out.params.items()):
-            print('{:7s} {:11.5f} {:11.5f}'.format(name, param.value, param.stderr))
+            print('{:7s} {:11.5f} {:11.5f}'.format(
+                name, param.value, param.stderr))
             deci = -orderOfMagnitude(param.stderr)
             plt.text(
                 s=rf"${name} = {format(round(param.value, deci), f'.{deci}f')} \pm {round_up(param.stderr, deci)}$ " +
@@ -397,8 +409,10 @@ class Project:
             for name, param in out.params.items():
                 upper.add(name, value=(param.value + param.stderr))
                 lower.add(name, value=(param.value - param.stderr))
-            plt.plot(x_fit, out.eval(params=upper, x=x_fit), label="Obere Schranke")
-            plt.plot(x_fit, out.eval(params=lower, x=x_fit), label="Untere Schranke")
+            plt.plot(x_fit, out.eval(params=upper, x=x_fit),
+                     label="Obere Schranke")
+            plt.plot(x_fit, out.eval(params=lower, x=x_fit),
+                     label="Untere Schranke")
         # plt.annotate(
         #     rf"${name} = {format(round(param.value, deci), f'.{deci}f')} \pm {round_up(param.stderr, deci)}" + r"\frac{\mathrm{m}}{\mathrm{s}^{2}}$",
         #     xy=(x[0], y[0]),
@@ -477,7 +491,8 @@ class Project:
         # plt.title("Klemmspannung in Abhängigkeit vom Strom Messungen einer Batterie")
         plt.legend(loc=0)
         # plt.show()
-        plt.savefig(f"lin_reg_{x.name}_{y.name}_messreihe_{self.load_data_counter}.png", dpi=400)
+        plt.savefig(
+            f"lin_reg_{x.name}_{y.name}_messreihe_{self.load_data_counter}.png", dpi=400)
 
     def chisq_stat(self, f, x_data, y_data, popt, sigma):
         prediction = f(x_data, *popt)
