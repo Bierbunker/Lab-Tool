@@ -1,0 +1,31 @@
+"labtool_ex2/src/main.py" 81L, 3158C written
+Error detected while processing BufWritePre Autocommands for "*":
+Error executing vim.schedule lua callback: ...ck/packer/start/plenary.nvim/lua/plenary/async/async.lua:14: The coroutine failed with this message: cannot resume dead co
+routine
+Error executing vim.schedule lua callback: ...ck/packer/start/plenary.nvim/lua/plenary/async/async.lua:14: The coroutine failed with this message: cannot resume dead co
+routine
+Error executing vim.schedule lua callback: ...ck/packer/start/plenary.nvim/lua/plenary/async/async.lua:14: The coroutine failed with this message: cannot resume dead co
+routine
+Error executing vim.schedule lua callback: ...ck/packer/start/plenary.nvim/lua/plenary/async/async.lua:14: The coroutine failed with this message: cannot resume dead co
+routine
+Error executing vim.schedule lua callback: ...ck/packer/start/plenary.nvim/lua/plenary/async/async.lua:14: The coroutine failed with this message: cannot resume dead co
+routine
+Error executing vim.schedule lua callback: ...ck/packer/start/plenary.nvim/lua/plenary/async/async.lua:14: The coroutine failed with this message: cannot resume dead co
+routine
+Error executing vim.schedule lua callback: ...ck/packer/start/plenary.nvim/lua/plenary/async/async.lua:14: The coroutine failed with this message: cannot resume dead co
+routine
+Error executing vim.schedule lua callback: ...ck/packer/start/plenary.nvim/lua/plenary/async/async.lua:14: The coroutine failed with this message: cannot resume dead co
+routine
+Error executing vim.schedule lua callback: ...ck/packer/start/plenary.nvim/lua/plenary/async/async.lua:14: The coroutine failed with this message: cannot resume dead co
+routine
+Error executing vim.schedule lua callback: ...ck/packer/start/plenary.nvim/lua/plenary/async/async.lua:14: The coroutine failed with this message: cannot resume dead co
+routine
+Error executing vim.schedule lua callback: ...ck/packer/start/plenary.nvim/lua/plenary/async/async.lua:14: The coroutine failed with this message: cannot resume dead co
+routine
+Error executing vim.schedule lua callback: ...ck/packer/start/plenary.nvim/lua/plenary/async/async.lua:14: The coroutine failed with this message: cannot resume dead co
+routine
+Error executing vim.schedule lua callback: ...ck/packer/start/plenary.nvim/lua/plenary/async/async.lua:14: The coroutine failed with this message: cannot resume dead co
+routine
+Error executing vim.schedule lua callback: ...ck/packer/start/plenary.nvim/lua/plenary/async/async.lua:14: The coroutine failed with this message: cannot resume dead co
+routine
+vim.lsp.buf.formatting_sync: timeout

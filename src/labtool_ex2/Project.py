@@ -3,20 +3,19 @@
 # Press Shift+F10 to execute it or replace it with your code.
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
 import numpy as np
-import scipy as sp
-import sympy
+
+# import scipy as sp
+# import sympy
 import pandas
+import matplotlib
+
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from lmfit import Parameters
-from sklearn.linear_model import LinearRegression
-from pprint import pprint
-from math import floor
-from math import sqrt
+
+# from math import floor
+# from math import sqrt
 from sympy.interactive import printing
-from scipy.optimize import curve_fit
-from scipy.stats import chisquare
-from scipy.odr import ODR, Model, Data, RealData
-from itertools import count
 from lmfit.models import ExpressionModel
 from lmfit.models import LinearModel
 
@@ -27,10 +26,6 @@ import re
 
 from sympy import Matrix, hessian, lambdify
 from sympy import latex
-from sympy.utilities.iterables import ordered
-from sympy import sympify
-from scipy.integrate import simps
-from scipy.integrate import trapz
 
 from .Equation import Equation  # relative import
 
@@ -66,8 +61,8 @@ class Project:
         plt.rcParams.update({"xtick.labelsize": 9})
         plt.rcParams.update({"ytick.labelsize": 9})
 
-        p = Path(f"./Output/{name}")
-        p.mkdir(exist_ok=True)
+        p = Path(f"./Output/{name}/")
+        p.mkdir(parents=True, exist_ok=True)
 
     def load_data(self, path, loadnew=False, clean=True):
         print("\n\n\nLoading Data from: " + path)
@@ -83,9 +78,9 @@ class Project:
             name = Path(path).stem
             self.clean_dataset(name=name)
 
-    def clean_dataset(self, use_min=False):
+    def clean_dataset(self, name, use_min=False):
         for var in self.raw_data.droplevel("type", axis=1).columns:
-            if not re.match(rf"^d(\w)+(\.\d+)?$", var):
+            if not re.match(r"^d(\w)+(\.\d+)?$", var):
                 reg_var = rf"^{var}(\.\d+)?$"
                 reg_err = rf"^d{var}(\.\d+)?$"
                 data = self.raw_data.droplevel("type", axis=1)
@@ -123,6 +118,7 @@ class Project:
 
         self.data.dropna(inplace=True)
         self.messreihen_dfs.append(self.data)
+        self.dfs[name] = self.data
 
     def find_possible_zero(self, identifier):
         return self.data[~self.data[identifier].astype(bool)]

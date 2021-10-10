@@ -1,4 +1,4 @@
-# Lab-Tool - A Python based lab-data visualisation tool
+# Lab-Tool - A Python based lab-data visualization tool
 
 Lab-Tool is a python script, that can be used to process and visualize data primarily from physics experiments. 
 
@@ -11,7 +11,7 @@ Features include:
 
 ## Get Started 
 
-Clone the Repo and run the getpackages skript which will install the requiered 
+Clone the Repo and run the getpackages script which will install the required 
 
 * Python3 
 * pip3 
