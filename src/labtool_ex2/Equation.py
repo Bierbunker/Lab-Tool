@@ -4,14 +4,14 @@
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
 import numpy as np
 import sympy
+import math
+import re
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from sympy.interactive import printing
 from lmfit.models import ExpressionModel
 
-import math
-import re
 
 from sympy import Matrix, hessian, lambdify
 from sympy import latex
@@ -28,15 +28,18 @@ def round_up(n, decimals=0):
 
 
 class Equation:
-    def __init__(self, expr, variables,project_name, label, dataframe=None, figure=None):
+    def __init__(self, expr, variables,project_name, label,var_name="generic",add_subplot=False,dataframe=None, figure=None):
         self.variables = variables
+        # self.err_vars = 
         self.symbols = sympy.symbols(variables)
         self._expr = expr
         self.expr = sympify(expr)
         self.err_expr = self.error_func()
         self.project_name = project_name
+        self.var_name = var_name
         # self.data = pandas.DataFrame(data=None)
         self.data = dataframe
+        self.add_subplot = add_subplot
         # self.sigfigs = dict()
         self.func = self.expr_to_np(self.expr)
         self.err_func = self.expr_to_np(self.err_expr)
@@ -56,8 +59,6 @@ class Equation:
         return e_func
 
     def expr_to_np(self, esp):
-        for x in range(10):
-            print(tuple(esp.free_symbols))
         return lambdify(tuple(esp.free_symbols), esp, "numpy")
 
     def __call__(self, *args, **kwargs):
@@ -148,6 +149,76 @@ class Equation:
         with open(f"../data/histo_data_{ser.name}.tex", "w") as tf:
             tf.write(ser.rename(rf"${ser.name}$").to_latex(escape=False))
 
+    def get_fig_ax(self, figure, toggle_add_subplot):
+        fig = None
+        ax = None
+        if figure:
+            fig = figure
+            print(fig.get_axes())
+            if toggle_add_subplot:
+                if self.add_subplot:
+                    if fig.get_axes():
+                        ax = fig.get_axes()
+                    else:
+                        ax = fig.add_subplot()
+                else:
+                    ax = fig.add_subplot()
+            else:
+                if self.add_subplot:
+                    ax = fig.add_subplot()
+                else:
+                    if fig.get_axes():
+                        ax = fig.get_axes()
+                    else:
+                        ax = fig.add_subplot()
+            # ax = fig.add_axes(
+            #     rect=[x_data.min(), y_data.min(), x_data.max(), y_data.max()]
+            # )
+        elif self.figure:
+            fig = self.figure
+            print(fig.get_axes())
+            if toggle_add_subplot:
+                if self.add_subplot:
+                    print(fig.get_axes())
+                    if fig.get_axes():
+                        ax = fig.get_axes()
+                    else:
+                        ax = fig.add_subplot()
+                else:
+                    ax = fig.add_subplot()
+            else:
+                if self.add_subplot:
+                    ax = fig.add_subplot()
+                else:
+                    if fig.get_axes():
+                        ax = fig.get_axes()
+                    else:
+                        ax = fig.add_subplot()
+        else:
+            raise Exception
+        return fig, ax
+
+    def apply_df(self):
+        function_data = dict()
+        # for i in range(len(self.data.columns)):
+        #     series = self.data.iloc[:, i]
+        #     var = series.name
+        #     function_data[var] = series.to_numpy()
+        # maybe better
+        for var in self.expr.free_symbols:
+            var = str(var)
+            series = self.data[var]
+            function_data[var] = series.to_numpy()
+        return self(**function_data)
+
+    def apply_df_err(self):
+        function_data = dict()
+        for var in self.err_expr.free_symbols:
+            var = str(var)
+            series = self.data[var]
+            function_data[var] = series.to_numpy()
+        return self.err_func(**function_data)
+
     def plot_data_scatter(
         self,
         x,
@@ -158,37 +229,15 @@ class Equation:
         show_lims=False,
         withfit=False,
         scaling=False,
+        toggle_add_subplot=False,
+        **kwargs
     ):
         # plt.cla()
-        fig = None
-        ax = None
-        function_data = dict()
-        for i in range(len(self.data.columns)):
-            series = self.data.iloc[:, i]
-            var = series.name
-            function_data[var] = series.to_numpy()
-
-        # maybe better
-        # for var in self.variables.split("\\s+"):
-        #     series = self.df[var]
-        #     function_data[var] = series.to_numpy()
-
+        fig, ax = self.get_fig_ax(figure, toggle_add_subplot)
         x_data = self.data[x]
-        y_data = self(**function_data)
+        y_data = self.apply_df()
         print(x_data)
         print(y_data)
-        if figure:
-            fig = figure
-            ax = fig.add_axes(
-                rect=[x_data.min(), y_data.min(), x_data.max(), y_data.max()]
-            )
-        elif self.figure:
-            fig = self.figure
-            ax = fig.add_axes(
-                rect=[x_data.min(), y_data.min(), x_data.max(), y_data.max()]
-            )
-        else:
-            raise Exception
         x_continues_plot_data = np.linspace(x_data.min(), x_data.max(), 1000)
 
         if scaling:
@@ -206,34 +255,38 @@ class Equation:
             label="Data",
         )
         if errors:
+            y_err = self.apply_df_err()
+            print(y_err)
             ax.errorbar(
-                raw_x,
-                raw_y,
+                x_data,
+                y_data,
                 xerr=self.data[f"d{x}"],
-                yerr=self.data[f"d{y}"],
+                yerr=y_err,
                 fmt="none",
                 capsize=3,
             )
 
         if withfit:
-            print(self.variables.split("\\s+"))
+            print(self.variables.split())
             mod = ExpressionModel(
                 self._expr,
-                independent_vars=self.variables.split("\\s+"),
+                independent_vars=self.variables.split(),
             )
             # pars = mod.guess(raw_y, x=raw_x)
             if guess:
                 pars = mod.make_params(**guess)
             else:
+                # TODO custom error needs to be implemented
+                print("No guess was passed")
                 raise Exception
             # thinnen the fit data to avoid over fitting
-            x_fit = np.array_split(raw_x.iloc[::2], 2)[0]
-            y_fit = np.array_split(raw_y.iloc[::2], 2)[0]
+            x_fit = np.array_split(x_data.iloc[::2], 2)[0]
+            y_fit = np.array_split(y_data.iloc[::2], 2)[0]
             out = mod.fit(y_fit, pars, x=x_fit)
             ax.plot(x_fit, out.init_fit, "b-", label="fit" + self.label)
             # ax.plot(raw_x[:len(raw_x)//2], (10 * np.exp(-0.157 * raw_x[:len(raw_x)//2])), "m-", label="exponentiell")
             # ax.plot(raw_x[len(raw_x)//2:], (-0.05 * raw_x[len(raw_x)//2:] + 2.4), "g-", label="linear")
-            ax.plot(raw_x, out.eval(x=raw_x), "r-", label="best fit")
+            ax.plot(x_data, out.eval(x=x_continues_plot_data), "r-", label="best fit")
             print(out.fit_report(min_correl=0.25))
 
         ax.set_xlabel(labels[0])
