@@ -7,16 +7,28 @@ import sympy
 import math
 import re
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import pandas
 from sympy.interactive import printing
 from lmfit.models import ExpressionModel
+from collections.abc import Iterable
 
 
 from sympy import Matrix, hessian, lambdify
 from sympy import latex
 from sympy.utilities.iterables import ordered
 from sympy import sympify
+from sympy import Eq
+from sympy.solvers import solve
+from sympy.parsing.sympy_parser import parse_expr
+from sympy.parsing.sympy_parser import (
+    standard_transformations,
+    implicit_multiplication_application,
+)
+
+transformations = standard_transformations + (implicit_multiplication_application,)
 from scipy.integrate import trapz
 
 printing.init_printing(use_latex=True)
@@ -27,13 +39,40 @@ def round_up(n, decimals=0):
     return math.ceil(n * multiplier) / multiplier
 
 
+def orderOfMagnitude(number):
+    return math.floor(math.log(number, 10))
+
+
 class Equation:
-    def __init__(self, expr, variables,project_name, label,var_name="generic",add_subplot=False,dataframe=None, figure=None):
+    def __init__(
+        self,
+        expr,
+        variables,
+        project_name,
+        label,
+        var_name,
+        mapping=dict(),
+        add_subplot=False,
+        dataframe=None,
+        figure=None,
+    ):
         self.variables = variables
-        # self.err_vars = 
-        self.symbols = sympy.symbols(variables)
+        # self.err_vars =
+        # variables = {
+        # "f":"mm"
+        # "r":"mm"
+        # "NA":"1"
+        # }
+        self.mapping = mapping
+        self.symbols = sympy.symbols(list(variables.keys()))
         self._expr = expr
+        # if errors are encountered it is probably a naming confliction with internal functions like rf see https://docs.sympy.org/latest/modules/functions/combinatorial.html
         self.expr = sympify(expr)
+        self.var_name_symbol = sympy.symbols(var_name)
+        self.eqn = Eq(self.var_name_symbol, self.expr)
+        self.label = label
+        # self.expr = parse_expr(expr, transformations=transformations)
+
         self.err_expr = self.error_func()
         self.project_name = project_name
         self.var_name = var_name
@@ -43,10 +82,14 @@ class Equation:
         # self.sigfigs = dict()
         self.func = self.expr_to_np(self.expr)
         self.err_func = self.expr_to_np(self.err_expr)
-        self.figure = plt.figure()
+        if figure:
+            self.figure = figure
+        else:
+            self.figure = plt.figure()
 
     def error_func(self):
         vs = list(ordered(self.expr.free_symbols))
+        print(vs)
 
         def gradient(f, vs):
             return Matrix([f]).jacobian(vs)
@@ -54,6 +97,9 @@ class Equation:
         e_func = 0
         errs = " ".join([f"d{s}" for s in vs])
         er = sympy.symbols(errs)
+        print(er)
+        if not isinstance(er, Iterable):
+            er = [er]
         for c, s in zip(gradient(self.expr, vs), er):
             e_func = e_func + abs(c) * s
         return e_func
@@ -62,6 +108,8 @@ class Equation:
         return lambdify(tuple(esp.free_symbols), esp, "numpy")
 
     def __call__(self, *args, **kwargs):
+        if args:
+            print("None Keyword Arguments are ignored")
         return self.func(**kwargs)
 
     # @multiplicity for example if data is of ten period instead of one
@@ -111,12 +159,20 @@ class Equation:
     def error_calculation(self, data):
         rows = data.to_dict("index")
         print(rows)
-        for i, row in rows.items():
+        for _, row in rows.items():
             print(row)
             # val = self.func(**row)
             err = self.err_func(**row)
             # print(val)
             print(err)
+
+    def _solve_for(self, var):
+        eqn = solve(self.eqn, sympy.symbols(var))
+        return eqn
+
+    def solve_for(self, var):
+        # TODO should use internal _solve_for to solve for var and create a new Equation and return it
+        pass
 
     # def resort(self):
     #     print(self.raw_data.columns.get_level_values("type"))
@@ -158,7 +214,7 @@ class Equation:
             if toggle_add_subplot:
                 if self.add_subplot:
                     if fig.get_axes():
-                        ax = fig.get_axes()
+                        ax = fig.get_axes()[0]
                     else:
                         ax = fig.add_subplot()
                 else:
@@ -168,7 +224,7 @@ class Equation:
                     ax = fig.add_subplot()
                 else:
                     if fig.get_axes():
-                        ax = fig.get_axes()
+                        ax = fig.get_axes()[0]
                     else:
                         ax = fig.add_subplot()
             # ax = fig.add_axes(
@@ -181,7 +237,7 @@ class Equation:
                 if self.add_subplot:
                     print(fig.get_axes())
                     if fig.get_axes():
-                        ax = fig.get_axes()
+                        ax = fig.get_axes()[0]
                     else:
                         ax = fig.add_subplot()
                 else:
@@ -191,7 +247,7 @@ class Equation:
                     ax = fig.add_subplot()
                 else:
                     if fig.get_axes():
-                        ax = fig.get_axes()
+                        ax = fig.get_axes()[0]
                     else:
                         ax = fig.add_subplot()
         else:
@@ -222,23 +278,20 @@ class Equation:
     def plot_data_scatter(
         self,
         x,
-        labels,
-        guess=None,
         figure=None,
+        style="r",
         errors=False,
-        show_lims=False,
         withfit=False,
+        guess=None,
+        show_lims=False,
         scaling=False,
         toggle_add_subplot=False,
-        **kwargs
+        **kwargs,
     ):
         # plt.cla()
         fig, ax = self.get_fig_ax(figure, toggle_add_subplot)
         x_data = self.data[x]
         y_data = self.apply_df()
-        print(x_data)
-        print(y_data)
-        x_continues_plot_data = np.linspace(x_data.min(), x_data.max(), 1000)
 
         if scaling:
             ax.set_yscale(scaling)
@@ -249,7 +302,7 @@ class Equation:
         ax.scatter(
             x_data,
             y_data,
-            c="r",
+            c=style,
             marker=".",
             s=39.0,
             label="Data",
@@ -267,33 +320,17 @@ class Equation:
             )
 
         if withfit:
-            print(self.variables.split())
-            mod = ExpressionModel(
-                self._expr,
-                independent_vars=self.variables.split(),
+            self.plot_fit(
+                x=x, y=self.var_name, guess=guess, toggle_add_subplot=toggle_add_subplot
             )
-            # pars = mod.guess(raw_y, x=raw_x)
-            if guess:
-                pars = mod.make_params(**guess)
-            else:
-                # TODO custom error needs to be implemented
-                print("No guess was passed")
-                raise Exception
-            # thinnen the fit data to avoid over fitting
-            x_fit = np.array_split(x_data.iloc[::2], 2)[0]
-            y_fit = np.array_split(y_data.iloc[::2], 2)[0]
-            out = mod.fit(y_fit, pars, x=x_fit)
-            ax.plot(x_fit, out.init_fit, "b-", label="fit" + self.label)
-            # ax.plot(raw_x[:len(raw_x)//2], (10 * np.exp(-0.157 * raw_x[:len(raw_x)//2])), "m-", label="exponentiell")
-            # ax.plot(raw_x[len(raw_x)//2:], (-0.05 * raw_x[len(raw_x)//2:] + 2.4), "g-", label="linear")
-            ax.plot(x_data, out.eval(x=x_continues_plot_data), "r-", label="best fit")
-            print(out.fit_report(min_correl=0.25))
 
-        ax.set_xlabel(labels[0])
-        ax.set_ylabel(labels[1])
+        self.set_x_y_label(ax=ax, x=x, y=self.var_name)
+
+        # ax.set_xlabel(labels[0])
+        # ax.set_ylabel(labels[1])
         ax.legend(loc=0)
         fig.savefig(
-            f"./Output/{self.project_name}/fit_of_{x}__mess_nr_.png",
+            f"./Output/{self.project_name}/{x}_{self.var_name}_mess_daten.png",
             dpi=400,
         )
         # fig.savefig(
@@ -301,8 +338,130 @@ class Equation:
         #     dpi=400,
         # )
 
-    def plot_function(self):
-        pass
+    def plot_fit(
+        self,
+        x,
+        y,
+        style="r-",
+        use_all_known=False,
+        offset=[0, 0],
+        figure=None,
+        guess=None,
+        toggle_add_subplot=False,
+    ):
+        eqn = self._solve_for(y)
+        print(str(eqn))
+        try:
+            x_data = self.data[x]
+        except KeyError as e:
+            print(f"No Data found for {x}")
+        try:
+            y_data = self.data[y]
+        except KeyError as e:
+            print(f"No Data found for {y} trying to generate it")
+            # TODO need to improved maybe with a solve_for y and then calculation
+            y_data = pandas.Series(self.apply_df(), name=self.var_name)
+        fig, ax = self.get_fig_ax(figure, toggle_add_subplot)
+        # print(self.variables.split())
+        # mod = ExpressionModel(
+        #     self._expr,
+        #     independent_vars=self.variables.split(),
+        # )
+        # print(self.variables.split())
+        mod = ExpressionModel(
+            str(eqn),
+            independent_vars=[x],
+        )
+        # pars = mod.guess(raw_y, x=raw_x)
+        if guess:
+            pars = mod.make_params(**guess)
+        else:
+            # TODO custom error needs to be implemented
+            print("No guess was passed")
+            raise Exception
+        # thinnen the fit data to avoid over fitting
+        # x_fit = np.array_split(x_data.iloc[::2], 2)[0]
+        # y_fit = np.array_split(y_data.iloc[::2], 2)[0]
+        print(x_data)
+        print(y_data)
+        x_fit = x_data.values.reshape(1, -1)
+        y_fit = y_data.values.reshape(1, -1)
+        print(type(x_fit))
+        print(type(y_fit))
+        # .to_numpy(copy=True)
+        # x_fit = np.array(x_data.values)
+        # y_fit = np.array(y_data.values)
+        print(x_fit.shape)
+        print(x_fit)
+        print(y_fit.shape)
+        print(y_fit)
+        # stuff = {x_data.name:x_data}
+        stuff = {x_data.name: x_fit}
+        out = mod.fit(y_fit, pars, **stuff)
+        x_continues_plot_data = np.linspace(x_data.min(), x_data.max(), 1000)
+        for i, (name, param) in enumerate(out.params.items()):
+            print("{:7s} {:11.5f} {:11.5f}".format(name, param.value, param.stderr))
+            deci = -orderOfMagnitude(param.stderr)
+            print(deci)
+            if deci < 0:
+                deci = 1
+            ax.text(
+                s=rf"${name} = {format(round(param.value, deci), f'.{deci}f')} \pm {round_up(param.stderr, deci)}$ "
+                + self.variables[name],
+                bbox={"facecolor": "#616161", "alpha": 0.85},
+                x=(max(x_data) - min(y_data)) / 100 * (5 + offset[0]) + min(x_data),
+                y=(max(y_data) - min(y_data)) * (offset[1] / 100 + (i + 1) / 7)
+                + min(y_data),
+                fontsize=10,
+            )
+        # res = np.array(out.init_fit).reshape(1,-1)
+
+        # print(res)
+        # ax.plot(x_fit, res, "b-", label="fit" + self.label)
+        # ax.plot(raw_x[:len(raw_x)//2], (10 * np.exp(-0.157 * raw_x[:len(raw_x)//2])), "m-", label="exponentiell")
+        # ax.plot(raw_x[len(raw_x)//2:], (-0.05 * raw_x[len(raw_x)//2:] + 2.4), "g-", label="linear")
+        stuff2 = {x_data.name: x_continues_plot_data}
+        resp = np.array(out.eval(**stuff2))[0, :]
+        ax.plot(x_continues_plot_data, resp, style, label=f"{self.label} fit")
+        self.set_x_y_label(ax, x, y)
+        ax.legend(loc=0)
+        print(out.fit_report(min_correl=0.25))
+        fig.savefig(f"./Output/{self.project_name}/fit_of_{x}_to_{y}.png")
+
+    def set_x_y_label(self, ax, x, y):
+        unitx = self.variables[x]
+        unity = self.variables[y]
+        if x in self.mapping:
+            x = self.mapping[x]
+        if y in self.mapping:
+            y = self.mapping[y]
+        xlabel = rf"${x}$ / {unitx}"
+        ylabel = rf"${y}$ / {unity}"
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+
+    def plot_function(self, x, style="r-", figure=None, toggle_add_subplot=None):
+        fig, ax = self.get_fig_ax(figure, toggle_add_subplot)
+        x_data = self.data[x]
+        x_continues_plot_data = np.linspace(x_data.min(), x_data.max(), 1000)
+        function_data = dict()
+        print(str(self.eqn.free_symbols))
+        for var in self.eqn.free_symbols:
+            var = str(var)
+            if var is not x and var is not self.var_name:
+                series = self.data[var]
+                function_data[var] = series.to_numpy()
+        function_data[x] = x_continues_plot_data
+        y_data = self(**function_data)
+        self.set_x_y_label(ax, x, self.var_name)
+        ax.plot(
+            x_continues_plot_data,
+            y_data,
+            style,
+            label=f"{self.label} Graph",
+        )
+        ax.legend(loc=0)
+        fig.savefig(f"./Output/{self.project_name}/plot_{x}_to_{self.var_name}.png")
 
 
 if __name__ == "__main__":

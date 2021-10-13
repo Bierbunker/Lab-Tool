@@ -42,12 +42,14 @@ def orderOfMagnitude(number):
 
 
 class Project:
-    def __init__(self, name, font=10):
+    def __init__(self, name, global_variables=dict(), global_mapping=dict(), font=10):
         # self.variables = variables
         # self.symbols = sympy.symbols(variables)
         self.name = name
         self.equations = dict()
         self.load_data_counter = 0
+        self.gm = global_mapping
+        self.gv = global_variables
         # self.expr = sympify(expr)
         # self.err_expr = self.error_func()
         self.data_path = list()
@@ -236,7 +238,7 @@ class Project:
     TODO write own to latex function export data with the use of siunitx plugin
     """
 
-    def print_table(self, df):
+    def print_table(self, df, name=None):
         """Tries to export dataframe to latex table
 
         :df: TODO
@@ -246,6 +248,10 @@ class Project:
         print(df.columns)
         colnames = list()
         for colname in df.columns:
+            if colname in self.gm:
+                colname = self.gm[colname]
+                colnames.append(colname)
+                continue
             if "d" in colname and "\\" not in colname:
                 colname = colname.replace("d", "\\Delta ")
             if len(colname) > 1 and "\\" not in colname:
@@ -255,8 +261,12 @@ class Project:
             colnames.append(colname)
 
         df.columns = colnames
-        with open(f"../data/messreihe_{df.name}.tex", "w") as tf:
-            tf.write(df.to_latex(escape=False))
+        if name:
+            with open(f"./Output/{self.name}/messreihe_{name}.tex", "w") as tf:
+                tf.write(df.to_latex(escape=False))
+        else:
+            with open(f"./Output/{self.name}/messreihe_{df.name}.tex", "w") as tf:
+                tf.write(df.to_latex(escape=False))
 
     def objective(self, beta, t):
         """Is the function used to fit after
@@ -270,18 +280,46 @@ class Project:
         """
         return -beta[0] * np.sin(beta[1] * t) * np.exp(beta[2] * t)
 
-    def plot_data(self, x, y, labels, show_lims=False, withfit=False, scaling=False):
-        plt.cla()
+    def set_x_y_label(self, ax, x, y):
+        unitx = self.gv[x]
+        unity = self.gv[y]
+        if x in self.gm:
+            x = self.gm[x]
+        if y in self.gm:
+            y = self.gm[y]
+        xlabel = rf"${x}$ / {unitx}"
+        ylabel = rf"${y}$ / {unity}"
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+
+    def plot_data(
+        self,
+        x,
+        y,
+        label,
+        figure,
+        style="r",
+        errors=False,
+        show_lims=False,
+        withfit=False,
+        scaling=False,
+    ):
+        ax = None
+        if figure.get_axes():
+            ax = figure.get_axes()[0]
+        else:
+            ax = figure.add_subplot()
+        # plt.cla()
         raw_x = self.data[x]
         raw_y = self.data[y]
 
         if scaling:
-            plt.yscale(scaling)
-            plt.xscale(scaling)
+            ax.set_yscale(scaling)
+            ax.set_xscale(scaling)
         else:
-            plt.yscale("linear")
-            plt.xscale("linear")
-        x_data = np.linspace(raw_x.min(), raw_x.max(), 1000)
+            ax.set_yscale("linear")
+            ax.set_xscale("linear")
+        # x_data = np.linspace(raw_x.min(), raw_x.max(), 1000)
         # length = len(raw_x)
         # middle_index = length // 2
 
@@ -301,24 +339,37 @@ class Project:
         #     s=39.0,
         #     label="Rot Data",
         # )
-        plt.scatter(
+        # if errors:
+        #     ax.errorbar(
+        #         raw_x,
+        #         raw_y,
+        #         xerr=self.data[f"d{x}"],
+        #         yerr=self.data[f"d{y}"],
+        #         fmt="none",
+        #         capsize=3,
+        #     )
+        if errors:
+            errs = dict()
+            try:
+                name = "d" + x
+                errs["xerr"] = self.data[name].values
+            except Exception as e:
+                print(f"No xerr for {x} found")
+            try:
+                name = "d" + y
+                errs["yerr"] = self.data[name].values
+            except Exception as e:
+                print(f"No yerr for {y} found")
+            ax.errorbar(raw_x, raw_y, fmt="none", capsize=3, **errs)
+
+        ax.scatter(
             raw_x,
             raw_y,
-            c="r",
+            c=style,
             marker=".",
             s=39.0,
-            label="Rot Data",
+            label=label,
         )
-        if errors:
-            plt.errorbar(
-                raw_x,
-                raw_y,
-                xerr=self.data[f"d{x}"],
-                yerr=self.data[f"d{y}"],
-                fmt="none",
-                capsize=3,
-            )
-
         # y_blau_fit = 0.61 * 470 * 10 ** (-6) / x_data
         # y_red_fit = 0.61 * 635 * 10 ** (-6) / x_data
         # plt.plot(x_data, y_blau_fit, "b-", label="Blau Theoretisch")
@@ -390,9 +441,8 @@ class Project:
             # print(pcov)
             # print(stdevs)
 
-        plt.xlabel(labels[0])
-        plt.ylabel(labels[1])
-        plt.legend(loc=0)
+        self.set_x_y_label(ax=ax, x=x, y=y)
+        ax.legend(loc=0)
         # plt.title("Übergang von Exponentieller Dämpfung zur Linearen Dämpfung")
         # for val, err in zip(popt,stdevs):
         #    plt.annotate(rf"$g = j{round(val,deci)} \pm {round_up(err,deci)}" + r"\frac{\mathrm{m}}{\mathrm{s}^{2}}$" , xy=(min(x_data), min(y_fit)),
@@ -405,7 +455,7 @@ class Project:
         #         bbox={'facecolor': '#616161', 'alpha': 0.85}, xytext=(2.00 * min(x_data), 1.25 * min(y_fit)),
         #         fontsize=13, arrowprops=dict(arrowstyle="-"))
         # plt.show()
-        plt.savefig(
+        figure.savefig(
             f"./Output/{self.name}/fit_of_{x}_{y}_mess_nr_{self.load_data_counter}.png",
             dpi=400,
         )
