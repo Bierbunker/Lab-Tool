@@ -4,7 +4,7 @@ from labtool_ex2 import Equation
 from labtool_ex2 import Project
 
 if __name__ == "__main__":
-    gm = {"na": "N.A.", "xi": r"\xi"}
+    gm = {"na": "N.A.", "NA": "N.A.", "xi": r"\xi"}
     gv = {"NA": "1", "d": "mm"}
     P = Project("testing", global_variables=gv, global_mapping=gm, font=13)
     P.load_data("./src/labtool_ex2/Data/abbe/nadatablue")
@@ -19,6 +19,7 @@ if __name__ == "__main__":
         label="Numerische Apertur",
         dataframe=P.data[["r", "f", "dr", "df"]],
     )
+
     na.plot_fit(x="r", y="na", guess={"f": 1})
     # na.plot_fit(x="na", y="r", guess={"f": 1})
     d_vars = {"xi": "|||/mm", "d": "mm"}

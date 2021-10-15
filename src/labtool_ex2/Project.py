@@ -7,6 +7,8 @@ import numpy as np
 # import scipy as sp
 # import sympy
 import pandas
+import math
+import re
 import matplotlib
 
 matplotlib.use("Agg")
@@ -21,8 +23,6 @@ from lmfit.models import LinearModel
 
 from pathlib import Path
 
-import math
-import re
 
 from sympy import Matrix, hessian, lambdify
 from sympy import latex
@@ -43,28 +43,30 @@ def orderOfMagnitude(number):
 
 class Project:
     def __init__(self, name, global_variables=dict(), global_mapping=dict(), font=10):
-        # self.variables = variables
-        # self.symbols = sympy.symbols(variables)
         self.name = name
         self.equations = dict()
-        self.load_data_counter = 0
         self.gm = global_mapping
         self.gv = global_variables
-        # self.expr = sympify(expr)
-        # self.err_expr = self.error_func()
+        self.figure = plt.figure()
         self.data_path = list()
+        # BEGIN these are currently not used but maybe in the future
         self.messreihen_dfs = list()
         self.working_dfs = list()
         self.local_ledger = dict()
-        self.raw_data = pandas.DataFrame(data=None)
-        self.data = pandas.DataFrame(data=None)
+        # END these are currently not used but maybe in the future
+        self.raw_data = pandas.DataFrame()
+        self.data = pandas.DataFrame()
         self.dfs = dict()
-        plt.rcParams.update({"font.size": font})
-        plt.rcParams.update({"xtick.labelsize": 9})
-        plt.rcParams.update({"ytick.labelsize": 9})
+        self.load_data_counter = 0
+        rcsettings = {"font.size": font, "xtick.labelsize": 9, "ytick.labelsize": 9}
+        plt.rcParams.update(rcsettings)
 
         p = Path(f"./Output/{name}/")
         p.mkdir(parents=True, exist_ok=True)
+
+    def __str__(self):
+        return f"""This is the {self.name} Project \n
+                following mappings happen in this project {self.gm}"""
 
     def load_data(self, path, loadnew=False, clean=True):
         print("\n\n\nLoading Data from: " + path)
@@ -122,8 +124,35 @@ class Project:
         self.messreihen_dfs.append(self.data)
         self.dfs[name] = self.data
 
+    def create_Eq(self, *args, **kwargs):
+        """This is the recommended way to create Equations in a Project,
+        but feel free to instantiate Equation directly
+        """
+        print(args)
+        print(kwargs)
+        mappings = self.gm
+        if "mapping" in kwargs:
+            mappings.update(kwargs["mapping"])
+            kwargs["mapping"] = mappings
+        else:
+            kwargs["mapping"] = self.gm
+        if "figure" not in kwargs or not kwargs["figure"]:
+            kwargs["figure"] = self.figure
+        if "dataframe" not in kwargs or not kwargs["dataframe"]:
+            kwargs["dataframe"] = self.data
+        kwargs["project_name"] = self.name
+        print(args)
+        print(kwargs)
+        eq = Equation(*args, **kwargs)
+        self.equations[eq.var_name] = eq
+        return eq
+
     def find_possible_zero(self, identifier):
         return self.data[~self.data[identifier].astype(bool)]
+
+    def interpolate(self):
+        # TODO hard take min max of each free_symbols and make smooth interpolation of each variable
+        pass
 
     def normalize(self):
         """converts none si units into si units
@@ -132,6 +161,7 @@ class Project:
         """
         pass
 
+    # BEGIN should be moved to Equation
     def get_vardata(self, raw_data=False):
         """Simply returns the data needed to calculate the equation
         :returns: TODO
@@ -206,6 +236,8 @@ class Project:
         df.name = "extra"
         return df
 
+    # END should be moved to Equation
+
     def histoofseries(self, ser, bins, name):
         """Plots the histogram of a pandas series and draws a fit
 
@@ -268,18 +300,6 @@ class Project:
             with open(f"./Output/{self.name}/messreihe_{df.name}.tex", "w") as tf:
                 tf.write(df.to_latex(escape=False))
 
-    def objective(self, beta, t):
-        """Is the function used to fit after
-
-        :A: TODO
-        :w: TODO
-        :phi: TODO
-        :offset: TODO
-        :returns: TODO
-
-        """
-        return -beta[0] * np.sin(beta[1] * t) * np.exp(beta[2] * t)
-
     def set_x_y_label(self, ax, x, y):
         unitx = self.gv[x]
         unity = self.gv[y]
@@ -319,35 +339,6 @@ class Project:
         else:
             ax.set_yscale("linear")
             ax.set_xscale("linear")
-        # x_data = np.linspace(raw_x.min(), raw_x.max(), 1000)
-        # length = len(raw_x)
-        # middle_index = length // 2
-
-        # plt.scatter(
-        #     raw_x[:middle_index],
-        #     raw_y[:middle_index],
-        #     c="b",
-        #     marker=".",
-        #     s=39.0,
-        #     label="Blau Data",
-        # )
-        # plt.scatter(
-        #     raw_x[middle_index:],
-        #     raw_y[middle_index:],
-        #     c="r",
-        #     marker=".",
-        #     s=39.0,
-        #     label="Rot Data",
-        # )
-        # if errors:
-        #     ax.errorbar(
-        #         raw_x,
-        #         raw_y,
-        #         xerr=self.data[f"d{x}"],
-        #         yerr=self.data[f"d{y}"],
-        #         fmt="none",
-        #         capsize=3,
-        #     )
         if errors:
             errs = dict()
             try:
@@ -370,11 +361,6 @@ class Project:
             s=39.0,
             label=label,
         )
-        # y_blau_fit = 0.61 * 470 * 10 ** (-6) / x_data
-        # y_red_fit = 0.61 * 635 * 10 ** (-6) / x_data
-        # plt.plot(x_data, y_blau_fit, "b-", label="Blau Theoretisch")
-        # # plt.plot(x_data, y_blau_fit, "b-", label="Blau Theoretisch")
-        # plt.plot(x_data, y_red_fit, "r-", label="Red Theoretisch")
 
         if withfit:
             # mod = ExpressionModel(
@@ -455,10 +441,10 @@ class Project:
         #         bbox={'facecolor': '#616161', 'alpha': 0.85}, xytext=(2.00 * min(x_data), 1.25 * min(y_fit)),
         #         fontsize=13, arrowprops=dict(arrowstyle="-"))
         # plt.show()
-        figure.savefig(
-            f"./Output/{self.name}/fit_of_{x}_{y}_mess_nr_{self.load_data_counter}.png",
-            dpi=400,
-        )
+        # figure.savefig(
+        #     f"./Output/{self.name}/fit_of_{x}_{y}_mess_nr_{self.load_data_counter}.png",
+        #     dpi=400,
+        # )
         # print(chisq(objective,self.data[x],self.data[y]/10,popt,self.data[f"d{y}"]/10))
         # print(chisq_stat(objective,self.data[x],self.data[y]/10,popt,self.data[rf"\sigma_{{{y}}}"]/10))
 
@@ -640,19 +626,6 @@ class Project:
         print(pz)
         self.data = self.data[self.data["t"].between(start, end)]
         return pz
-
-    def plot_function(self):
-        pass
-
-
-def linear_func(x, g):
-    """Plain old linear function
-
-    :x: TODO
-    :returns: TODO
-
-    """
-    return 4 * np.pi * np.pi * x / g
 
     # print("Integrals")
     # I = trapz(P.data['p'], P.data['V']) / passes * hpacm3tosi
