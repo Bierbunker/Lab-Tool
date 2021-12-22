@@ -75,6 +75,7 @@ class Equation:
         self.add_subplot = add_subplot
 
         # sympy variable stuff
+        print(list(variables.keys()))
         self.symbols = sympy.symbols(list(variables.keys()))
         self.var_name_symbol = sympy.symbols(var_name)
 
@@ -99,10 +100,14 @@ class Equation:
             self.figure = figure
         else:
             self.figure = plt.figure()
+        print(self)
+        print(latex(self.err_expr))
 
     def error_func(self):
         vs = list(ordered(self.expr.free_symbols))
+        print(self.expr.free_symbols)
         logging.info(vs)
+        print(vs)
 
         def gradient(f, vs):
             return Matrix([f]).jacobian(vs)
@@ -114,6 +119,7 @@ class Equation:
         if not isinstance(er, Iterable):
             er = [er]
         for c, s in zip(gradient(self.expr, vs), er):
+            # print(s)
             e_func = e_func + abs(c) * s
         return e_func
 
@@ -316,6 +322,7 @@ class Equation:
         withfit=False,
         guess=None,
         show_lims=False,
+        label="Data",
         scaling=False,
         toggle_add_subplot=False,
         **kwargs,
@@ -323,7 +330,7 @@ class Equation:
         # plt.cla()
         fig, ax = self.get_fig_ax(figure, toggle_add_subplot)
         x_data = self.data[x]
-        y_data = self.apply_df()
+        y_data = abs(self.apply_df())
 
         if scaling:
             ax.set_yscale(scaling)
@@ -337,7 +344,7 @@ class Equation:
             c=style,
             marker=".",
             s=39.0,
-            label="Data",
+            label=label,
         )
         if errors:
             y_err = self.apply_df_err()
@@ -357,6 +364,8 @@ class Equation:
             )
 
         self.set_x_y_label(ax=ax, x=x, y=self.var_name)
+        if not ax.get_title():
+            ax.set_title(self.label + " Streudiagramm")
 
         # ax.set_xlabel(labels[0])
         # ax.set_ylabel(labels[1])
@@ -460,17 +469,17 @@ class Equation:
             y = self.mapping[y]
         xlabel = rf"${x}$ / {unitx}"
         ylabel = rf"${y}$ / {unity}"
-        if ax.get_xlabel() != xlabel:
+        if not ax.get_xlabel():
+            ax.set_xlabel(xlabel)
+        elif ax.get_xlabel() != xlabel:
             axtra = ax.twinx()
             axtra.set_xlabel(xlabel)
-        else:
-            ax.set_xlabel(xlabel)
 
-        if ax.get_ylabel() != ylabel:
+        if not ax.get_ylabel():
+            ax.set_ylabel(ylabel)
+        elif ax.get_ylabel() != ylabel:
             axtra = ax.twiny()
             axtra.set_ylabel(ylabel)
-        else:
-            ax.set_ylabel(ylabel)
 
     def plot_function(self, x, style="r-", figure=None, toggle_add_subplot=None):
         fig, ax = self.get_fig_ax(figure, toggle_add_subplot)
