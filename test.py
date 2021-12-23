@@ -1,4 +1,9 @@
+<<<<<<< HEAD
 # import labtool_ex2 as lt
+=======
+import labtool_ex2 as lt
+
+print(dir(lt))
 
 from labtool_ex2 import Equation
 from labtool_ex2 import Project
@@ -85,3 +90,4 @@ if __name__ == "__main__":
         x="NA", y="d", figure=na.figure, errors=True, labels=["N.A. / 1", "d / mm"]
     )
 print(dir())
+>>>>>>> 34af142ca809a5ddf78a65fbd6fb2774c07b17bd
