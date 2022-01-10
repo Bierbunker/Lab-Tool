@@ -34,237 +34,179 @@ def round_up(n, decimals=0):
     return math.ceil(n * multiplier) / multiplier
 
 
+def orderOfMagnitude(number):
+    return math.floor(math.log(number, 10))
+
+
 class Equation:
-    def __init__(self, expr, variables):
+    def __init__(
+        self,
+        expr,
+        variables,
+        project_name,
+        label,
+        var_name,
+        mapping=dict(),
+        add_subplot=False,
+        dataframe=None,
+        figure=None,
+    ):
+        # variables if you don't have data on it dont pass it
+        # variables = {
+        # "f":"mm"
+        # "r":"mm"
+        # "NA":"1"
+        # }
+        # settings
+        self.var_name = var_name
         self.variables = variables
-        self.symbols = sympy.symbols(variables)
+        self.project_name = project_name
+        self.label = label
+        self.mapping = mapping
+        self.add_subplot = add_subplot
+
+        # sympy variable stuff
+        print(list(variables.keys()))
+        self.symbols = sympy.symbols(list(variables.keys()))
+        self.var_name_symbol = sympy.symbols(var_name)
+
+        # sympy eq stuff
+        # if errors are encountered it is probably a naming confliction with internal functions like rf see https://docs.sympy.org/latest/modules/functions/combinatorial.html
         self.expr = sympify(expr)
+        self._expr = expr
+        self.eqn = Eq(self.var_name_symbol, self.expr)
         self.err_expr = self.error_func()
-        self.raw_data = "Data not loaded"
-        self.data = pandas.DataFrame(data=None)
-        self.sigfigs = dict()
+        # self.expr = parse_expr(expr, transformations=transformations)
+
+        # data
+        self.data = dataframe
+        # self.sigfigs = dict()
+
+        # internal numpy representation of the Equation for fast calculation
         self.func = self.expr_to_np(self.expr)
         self.err_func = self.expr_to_np(self.err_expr)
 
+        # plotting
+        if figure:
+            self.figure = figure
+        else:
+            self.figure = plt.figure()
+        print(self)
+        print(latex(self.err_expr))
+
     def error_func(self):
         vs = list(ordered(self.expr.free_symbols))
-        def gradient(f, vs): return Matrix([f]).jacobian(vs)
+        print(self.expr.free_symbols)
+        logging.info(vs)
+        print(vs)
+
+        def gradient(f, vs):
+            return Matrix([f]).jacobian(vs)
+
         e_func = 0
-        errs = ' '.join([f"d{s}" for s in vs])
+        errs = " ".join([f"d{s}" for s in vs])
         er = sympy.symbols(errs)
+        logging.info(er)
+        if not isinstance(er, Iterable):
+            er = [er]
         for c, s in zip(gradient(self.expr, vs), er):
+            # print(s)
             e_func = e_func + abs(c) * s
         return e_func
 
-    def load_data(self, path):
-        df = pandas.read_csv(path, header=[0, 1], skipinitialspace=True)
-        # df.set_labels(["type","variable"])
-        df.columns = pandas.MultiIndex.from_tuples(
-            df.columns, names=["type", "variable"])
-        self.raw_data = df
-
     def expr_to_np(self, esp):
-        for x in range(10):
-            print(tuple(esp.free_symbols))
         return lambdify(tuple(esp.free_symbols), esp, "numpy")
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, **kwargs):
         return self.func(**kwargs)
 
+    def __str__(self):
+        tex = str(latex(self.eqn))
+        # Nothing really working to get it to work LatexPrinter needs to be modified
+        # https://stackoverflow.com/questions/43350381/sympy-modifying-latex-output-of-derivatives
+        # for var in self.eqn.free_symbols:
+        #     var = str(var)
+        #     if var in self.mapping:
+        #         print(var)
+        #         tex.replace(var, self.mapping[var])
+        #         expr.subs()
+        # return latex(self.expr)
+        return tex
+
+    def __doc__(self):
+        return """
+        This is the incomplete Documentation of Equation
+        If something doesn't work ask Max he knows and he will tell you it
+        will be fixed some time and you should make an issue.
+
+        """
+
     # @multiplicity for example if data is of ten period instead of one
-    def statistical_uncertainty(self, narray, linear_uncertainties=0.0, multiplicity=1):
-        res = list()
-        res.append(narray.mean() / multiplicity)
-        res.append(
-            (np.sqrt(narray.var(ddof=1) / len(narray)) * t_factor_of(
-                len(narray)) + linear_uncertainties) / multiplicity)
-        return [res]
+    # TODO Andi
+    # def statistical_uncertainty(self, narray, linear_uncertainties=0.0, multiplicity=1):
+    #     res = list()
+    #     res.append(narray.mean() / multiplicity)
+    #     res.append(
+    #         (
+    #             np.sqrt(narray.var(ddof=1) / len(narray)) * t_factor_of(len(narray))
+    #             + linear_uncertainties
+    #         )
+    #         / multiplicity
+    #     )
+    #     return [res]
 
     def find_sigfigs(self, x):
-        '''Returns the number of significant digits in a number. This takes into account
-        strings formatted in 1.23e+3 format and even strings such as 123.450'''
+        """Returns the number of significant digits in a number. This takes into account
+        strings formatted in 1.23e+3 format and even strings such as 123.450"""
         # change all the 'E' to 'e'
         x = x.lower()
-        if ('e' in x):
+        if "e" in x:
             # return the length of the numbers before the 'e'
-            myStr = x.split('e')
+            myStr = x.split("e")
             return len(myStr[0]) - 1  # to compenstate for the decimal point
         else:
             # put it in e format and return the result of that
             # NOTE: because of the 8 below, it may do crazy things when it parses 9 sigfigs
-            n = ('%.*e' % (8, float(x))).split('e')
+            n = ("%.*e" % (8, float(x))).split("e")
             # remove and count the number of removed user added zeroes. (these are sig figs)
-            if '.' in x:
-                s = x.replace('.', '')
+            if "." in x:
+                s = x.replace(".", "")
                 # number of zeroes to add back in
-                l = len(s) - len(s.rstrip('0'))
+                l = len(s) - len(s.rstrip("0"))
                 # strip off the python added zeroes and add back in the ones the user added
-                n[0] = n[0].rstrip('0') + ''.join(['0' for num in xrange(l)])
+                n[0] = n[0].rstrip("0") + "".join(["0" for num in xrange(l)])
             else:
                 # the user had no trailing zeroes so just strip them all
-                n[0] = n[0].rstrip('0')
+                n[0] = n[0].rstrip("0")
                 # pass it back to the beginning to be parsed
-        return find_sigfigs('e'.join(n))
+        return find_sigfigs("e".join(n))
 
-    def columns_to_symbols(self, df, symbols):
-        symbols = symbols.split(' ')
-        df.columns = symbols
-        print(df)
+    def _solve_for(self, var):
+        eqn = solve(self.eqn, sympy.symbols(var))
+        if isinstance(eqn, Iterable):
+            eqn = eqn[1]
+        return eqn
 
-    def check(self):
-        werte = self.raw_data['wert']
-        vals = self.statistical_uncertainty(werte["T"]["TS1"].to_numpy(), linear_uncertainties=0.01,
-                                            multiplicity=10)
-        vals = pandas.DataFrame(vals, columns=["T", "dT"])
-        print(werte[werte["l"]["Length"].astype(bool)])
-        vals["l"] = werte[werte["l"]["Length"].astype(bool)]["l"]["Length"]
-        print(vals)
-        # self.columns_to_symbols(vals, 'T dT l')
-        self.error_calculation(vals)
+    def solve_for(self, var):
+        # TODO should use internal _solve_for to solve for var and create a new Equation and return it
+        eqn = self._solve_for(var)
+        creation_params = {
+            "expr": eqn,
+            "variables": self.variables,
+            "project_name": self.project_name,
+            "label": "Change the label before plotting",
+            "var_name": var,
+            "mapping": self.mapping,
+            "add_subplot": self.add_subplot,
+            "dataframe": self.data,
+            "figure": self.figure,
+        }
+        return Equation(**creation_params)
 
-    def error_calculation(self, data):
-        rows = data.to_dict("index")
-        print(rows)
-        for i, row in rows.items():
-            print(row)
-            row['dl'] = 0.003
-            # val = self.func(**row)
-            err = self.err_func(**row)
-            # print(val)
-            print(err)
-
-    def resort(self):
-        print(self.raw_data.columns.get_level_values('type'))
-        for col, data in self.raw_data.items():
-            print(col[1])
-
-    def chunkify(self, criteria):
-
-        pass
-
-    def testing(self, use_min=True):
-        """for testing
-        :returns: TODO
-
-        """
-        for c in self.variables.split():
-            reg_var = rf"^{c}(\.\d+)?$"
-            reg_err = rf"^d{c}(\.\d+)?$"
-            # a terrible solution probably should not allow second index
-            #            try:
-            #                index = self.raw_data.columns.droplevel('type')
-            #            except:
-            #                pass
-            #            data = self.raw_data
-            #            data.columns = index
-            # end
-            data = self.raw_data.droplevel("type", axis=1)
-            filtered_vardata = data.filter(regex=reg_var)
-            filtered_errdata = data.filter(regex=reg_err)
-            # probably need to concat
-            # self.raw_vardata[c] = filtered_vardata
-            if len(filtered_vardata.columns) > 1:
-                mean = filtered_vardata.mean()
-                mean.name = c
-                std = filtered_vardata.std()
-                std = std.fillna(std.max())
-                std.name = rf"\sigma_{{{c}}}"
-                # i could check if a filtered error data is supplyied and
-                # add it to the sem
-                sem = filtered_vardata.sem()
-                sem = sem.fillna(sem.max())
-                sem.name = rf"d{c}"
-                if use_min:
-                    df = mean.to_frame()
-                    df[std.name] = std.min()
-                    df[sem.name] = sem.min()
-                    df.reset_index(drop=True, inplace=True)
-                else:
-                    df = pandas.concat(
-                        [mean, std, sem], axis=1).reset_index(drop=True)
-                self.data = pandas.concat([self.data, df], axis=1)
-            else:
-                self.data = pandas.concat(
-                    [self.data, filtered_vardata, filtered_errdata], axis=1)
-
-        self.data.dropna(inplace=True)
-
-    def get_vardata(self, raw_data=False):
-        """Simply returns the data needed to calculate the equation
-        :returns: TODO
-
-        """
-        df = pandas.DataFrame(data=None)
-        for c in self.variables.split():
-            reg = rf"^{c}$"
-            if raw_data:
-                filt = self.raw_data.droplevel(
-                    "type", axis=1).filter(regex=reg)
-            else:
-                filt = self.data.filter(regex=reg)
-            df = pandas.concat([df, filt], axis=1)
-        return df
-
-    def get_errdata(self, raw_data=False):
-        """Simply returns the error of the variables
-        :returns: TODO
-
-        """
-        df = pandas.DataFrame(data=None)
-        for c in self.variables.split():
-            reg = rf"^d{c}$"
-            if raw_data:
-                filt = self.raw_data.droplevel(
-                    "type", axis=1).filter(regex=reg)
-            else:
-                filt = self.data.filter(regex=reg)
-            df = pandas.concat([df, filt], axis=1)
-        return df
-
-    def get_vardata_and_errdata(self, raw_data=False):
-        """Simply returns the variables with their errors
-        :returns: TODO
-
-        """
-        df = pandas.DataFrame(data=None)
-        for c in self.variables.split():
-            reg = rf"^(d)?{c}$"
-            if raw_data:
-                filt = self.raw_data.droplevel(
-                    "type", axis=1).filter(regex=reg)
-            else:
-                filt = self.data.filter(regex=reg)
-            df = pandas.concat([df, filt], axis=1)
-        return df
-
-    def var(self, var, raw_data=False):
-        """Getter for a variable
-
-        :var: TODO
-        :returns: TODO
-
-        """
-        reg = rf"^(\\sigma_{{)?(d)?{var}(\.\d+)?(}})?$"
-        if raw_data:
-            df = self.raw_data.droplevel("type", axis=1).filter(regex=reg)
-        else:
-            df = self.data.filter(regex=reg)
-        df.name = var
-        return df
-
-    def get_extra_data(self, raw_data=True):
-        """Getter for a extra data
-
-        :returns: TODO
-
-        """
-        reg = rf"^!((\\sigma_{{)?(d)?{var}(\.\d+)?(}})?)(.)+$"
-        if raw_data:
-            df = self.raw_data.droplevel("type", axis=1).filter(regex=reg)
-        else:
-            df = self.data.filter(regex=reg)
-        df.name = "extra"
-        return df
+    # def resort(self):
+    #     print(self.raw_data.columns.get_level_values("type"))
+    #     for col, data in self.raw_data.items():
+    #         print(col[1])
 
     def histoofseries(self, ser, bins, name):
         """Plots the histogram of a pandas series and draws a fit
@@ -494,13 +436,13 @@ if __name__ == '__main__':
     # df = P.data[(P.data.t < 244)]
     # df = P.data[(P.data.t < 2432)]
     print("Integrals")
-    I = trapz(P.data['p'], P.data['V']) / passes * hpacm3tosi
+    I = trapz(P.data["p"], P.data["V"]) / passes * hpacm3tosi
     print(I)
     c = 1
     for i in np.linspace(244, 2432, 10):
         print(i)
         df = P.data[(P.data.t < i)]
-        I2 = trapz(df['p'], df['V']) / c * hpacm3tosi
+        I2 = trapz(df["p"], df["V"]) / c * hpacm3tosi
         c += 1
         print(I2)
     print("End Integrals")
@@ -512,31 +454,3 @@ if __name__ == '__main__':
 
     P.data = P.data[(2 < P.data.f) & (P.data.f < 7)]
     P.plot_data("f", "Vf", labels=["f / s$-1$", "V(f) / cm$^3$"])
-
-#    #print(g.raw_data)
-#    print(latex(g.expr))
-#    print(latex(g.err_expr))
-#    print(g.err_expr.free_symbols)
-#    # g.check()
-#    g.resort()
-#    ser = g.raw_data.droplevel("type", axis=1)["T"]
-#    g.testing()
-#    print(g.var("T",raw_data=True))
-#    g.histoofseries(ser,5,"Periodauern")
-#    print(g.data)
-#    print(g.get_vardata())
-#    g.data["l"] = g.data["l"] + 0.057
-#    g.plot_data("l","T")
-#    x = g.data["l"]
-#    y = (g.data["T"]/10)**2
-#    g.plot_linear_reg(x,y)
-#    g.print_table(g.var("T"))
-#    g.print_table(g.var("l"))
-#    winkeln = pandas.concat([g.var("l"),g.var("x", raw_data=True),g.var("phi", raw_data=True)],axis=1)
-#    winkeln.name = "winkel"
-#    winkeln.dropna(inplace=True)
-#    g.print_table(winkeln)
-#    g.find_sigfigs("0.0050")
-#    g.find_sigfigs("0.005")
-#    g.find_sigfigs("0.205")
-#

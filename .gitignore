@@ -173,3 +173,7 @@ dmypy.json
 *.tar
 *.zip
 *.rar
+
+## test data and output
+Data/*
+Output/*
