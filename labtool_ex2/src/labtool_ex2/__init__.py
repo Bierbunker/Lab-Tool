@@ -1,3 +1,6 @@
-from Project import Project as Project  # noqa
+__all__ = ["Equation", "Project"]
+__version__ = "0.0.1"
 
-__version__ = "4.1.0"
+from .Equation import *
+from .Project import *
+from .Project import Project as Project  # noqa
