@@ -230,6 +230,7 @@ if __name__ == "__main__":
     simp.var(list(gv))
     print(P.data)
     PR = U2 ** 2 * R / (R ** 2 + (XL) ** 2)
+    P.print_expr(PR)
     theoPR = U2 ** 2 * R / (R ** 2 + xl ** 2)
     P.data["theoPR"] = P.apply_df(theoPR)
     P.data["dtheoPR"] = P.apply_df_err(theoPR)
