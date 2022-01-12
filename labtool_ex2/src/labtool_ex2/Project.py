@@ -35,9 +35,9 @@ from pathlib import Path
 
 
 from sympy import Matrix, hessian, lambdify
-from sympy import latex
 
 from .Equation import Equation  # relative import
+from .LatexPrinter import latex
 
 DataFrameLike = UArrayLike = ItDepends = Any
 
@@ -292,6 +292,10 @@ class Project:
     """
     TODO write own to latex function export data with the use of siunitx plugin
     """
+
+    def print_expr(self, expr):
+        print(self.gm)
+        print(latex(expr=expr, symbol_names=self.gm))
 
     def print_table(self, df, name=None):
         """Tries to export dataframe to latex table
