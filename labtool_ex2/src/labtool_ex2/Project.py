@@ -9,6 +9,7 @@ import numpy as np
 import pandas
 import math
 import re
+import io
 import sympy as simp
 from collections.abc import Iterable
 from sympy.utilities.iterables import ordered
@@ -16,19 +17,16 @@ import matplotlib
 from typing import Callable, Union, Any
 from scipy import integrate
 from scipy.signal import find_peaks
-
-matplotlib.use("Agg")
-from matplotlib.legend import _get_legend_handles_labels
-import matplotlib.pyplot as plt
 from lmfit import Parameters
 from lmfit import conf_interval2d
 
-# from math import floor
-# from math import sqrt
 from sympy.interactive import printing
 from lmfit.models import ExpressionModel
 from lmfit.models import LinearModel
 from uncertainties import ufloat
+from uncertainties import nominal_value
+from uncertainties import std_dev
+from uncertainties.core import format_num
 from numpy.typing import ArrayLike
 
 from pathlib import Path
@@ -36,8 +34,15 @@ from pathlib import Path
 
 from sympy import Matrix, hessian, lambdify
 
+matplotlib.use("Agg")
+from matplotlib.legend import _get_legend_handles_labels
+import matplotlib.pyplot as plt
+
 from .Equation import Equation  # relative import
 from .LatexPrinter import latex
+
+# from math import floor
+# from math import sqrt
 
 DataFrameLike = UArrayLike = ItDepends = Any
 
@@ -103,9 +108,9 @@ class Project:
         self.raw_data = df.astype(float)
         if clean:
             name = Path(path).stem
-            self.clean_dataset(name=name)
+            self._clean_dataset(name=name)
 
-    def clean_dataset(self, name, use_min=False):
+    def _clean_dataset(self, name, use_min=False):
         for var in self.raw_data.droplevel("type", axis=1).columns:
             if not re.match(r"^d(\w)+(\.\d+)?$", var):
                 reg_var = rf"^{var}(\.\d+)?$"
@@ -147,30 +152,8 @@ class Project:
         self.messreihen_dfs.append(self.data)
         self.dfs[name] = self.data
 
-    def create_Eq(self, *args, **kwargs):
-        """This is the recommended way to create Equations in a Project,
-        but feel free to instantiate Equation directly
-        """
-        # print(args)
-        # print(kwargs)
-        mappings = self.gm
-        if "mapping" in kwargs:
-            mappings.update(kwargs["mapping"])
-            kwargs["mapping"] = mappings
-        else:
-            kwargs["mapping"] = self.gm
-        if "figure" not in kwargs or not kwargs["figure"]:
-            kwargs["figure"] = self.figure
-        if "dataframe" not in kwargs or kwargs["dataframe"].empty:
-            kwargs["dataframe"] = self.data
-        kwargs["project_name"] = self.name
-        # print(args)
-        # print(kwargs)
-        eq = Equation(*args, **kwargs)
-        self.equations[eq.var_name] = eq
-        return eq
-
     def find_possible_zero(self, identifier):
+        """Finds possible zeros in the dataset on a column identifier"""
         return self.data[~self.data[identifier].astype(bool)]
 
     def interpolate(self):
@@ -185,6 +168,7 @@ class Project:
         pass
 
     # BEGIN should be moved to Equation
+    # Currently not used for future
     def get_vardata(self, raw_data=False):
         """Simply returns the data needed to calculate the equation
         :returns: TODO
@@ -200,6 +184,7 @@ class Project:
             df = pandas.concat([df, filt], axis=1)
         return df
 
+    # Currently not used for future
     def get_errdata(self, raw_data=False):
         """Simply returns the error of the variables
         :returns: TODO
@@ -215,6 +200,7 @@ class Project:
             df = pandas.concat([df, filt], axis=1)
         return df
 
+    # Currently not used for future
     def get_vardata_and_errdata(self, raw_data=False):
         """Simply returns the variables with their errors
         :returns: TODO
@@ -230,6 +216,7 @@ class Project:
             df = pandas.concat([df, filt], axis=1)
         return df
 
+    # Currently not used for future
     def var(self, var, raw_data=False):
         """Getter for a variable
 
@@ -245,6 +232,7 @@ class Project:
         df.name = var
         return df
 
+    # Currently not used for future
     def get_extra_data(self, var, raw_data=True):
         """Getter for a extra data
 
@@ -294,7 +282,7 @@ class Project:
     """
 
     def print_expr(self, expr):
-        print(self.gm)
+        """Prints the expression in latex format and substitutes the variables according to the mapping"""
         print(latex(expr=expr, symbol_names=self.gm))
 
     def print_table(self, df, name=None):
@@ -307,7 +295,7 @@ class Project:
         print(df.columns)
         colnames = list()
         for colname in df.columns:
-            if colname[0] is "d" and colname[1:] in self.gm:
+            if colname[0] == "d" and colname[1:] in self.gm:
                 unit = " / " + self.gv[colname[1:]]
                 colname = self.gm[colname[1:]]
                 colnames.append(r"$\Delta " + colname + "$" + unit)
@@ -332,6 +320,84 @@ class Project:
         else:
             with open(f"./Output/{self.name}/messreihe_{df.name}.tex", "w") as tf:
                 tf.write(df.to_latex(escape=False))
+
+    def print_ftable(self, df, name=None, format="standard", split=False):
+
+        # andi vorschlag Table(Dataframe) object erstellen welches eine flag hat um zu sehen ob es aus uarrays besteht
+        # if df.ucoll
+        numColumns = df.shape[1]
+        numRows = df.shape[0]
+        output = io.StringIO()
+
+        colnames = list()
+        for colname in df.columns:
+            if colname[0] == "d" and colname[1:] in self.gm:
+                unit = " / " + self.gv[colname[1:]]
+                colname = self.gm[colname[1:]]
+                colnames.append(r"$\Delta " + colname + "$" + unit)
+                continue
+            if colname in self.gm:
+                unit = " / " + self.gv[colname]
+                colname = self.gm[colname]
+                colnames.append("$" + colname + "$" + unit)
+                continue
+            if "d" in colname and "\\" not in colname:
+                colname = colname.replace("d", "\\Delta ")
+            if len(colname) > 1 and "\\" not in colname:
+                colname = "\\" + colname
+
+            colnames.append("$" + colname + "$")
+            if split:
+                colnames.append("$\\Delta " + colname + "$")
+
+        output.write("\\begin{tblr}\n")
+        if split:
+
+            def format_value(x):
+                fmt_x = x.__format__("S")
+                if "e" in fmt_x:
+                    val, exp = fmt_x.split("e", 1)
+                    val = val.replace("(", "e" + exp + " & ").replace(")", "e" + exp)
+                else:
+                    val = fmt_x.replace("(", " & ").replace(")", "")
+                print(val)
+                return val
+
+            # colFormat = "%s|%s" % (alignment, alignment * numColumns)
+            # Write header
+            # output.write("\\begin{tabular}{%s}\n" % colFormat)
+            output.write(" & ".join(colnames) + "\\\\\n")
+
+            for i in range(numRows):
+                output.write(
+                    " & ".join([format_value(val) for val in df.iloc[i]]) + "\\\\\n"
+                )
+        else:
+            output.write(" & ".join(colnames) + "\\\\\n")
+
+            def format_value(x):
+                fmt_x = x.__format__("S")
+                s = re.sub(r"\((.*?)\)", lambda g: re.sub(r"\.", "", g[0]), fmt_x)
+                return s
+
+            for i in range(numRows):
+                output.write(
+                    " & ".join([format_value(val) for val in df.iloc[i]]) + "\\\\\n"
+                )
+
+        output.write("\\end{tblr}\n")
+        # output.write("& %s\\\\\\hline\n" % " & ".join(columnLabels))
+        # Write data lines
+
+        # Write footer
+        # output.write("\\end{tabular}")
+        if name:
+            with open(f"./Output/{self.name}/messreihe_{name}.tex", "w") as tf:
+                tf.write(output.getvalue())
+        else:
+            with open(f"./Output/{self.name}/messreihe_{df.name}.tex", "w") as tf:
+                tf.write(output.getvalue())
+        # return output.getvalue()
 
     def write_table(
         self,
@@ -481,14 +547,21 @@ class Project:
         return complete_str
 
     def figure_legend(self, **kwargs):
+        """
+        This function is used to add a legend to a figure for printing this is the preferred function to use
+        """
         self.figure.legend(*_get_legend_handles_labels(self.figure.axes), **kwargs)
 
     def ax_legend_all(self, **kwargs):
+        """
+        This function adds all legend to the first axes don't use this use figure_legend
+        """
         self.figure.get_axes()[0].legend(
             *_get_legend_handles_labels(self.figure.axes), **kwargs
         )
 
-    def fig_legend(self, **kwdargs):
+    # this is only an explanation of the two functions above
+    def _fig_legend(self, **kwdargs):
 
         # generate a sequence of tuples, each contains
         #  - a list of handles (lohand) and
@@ -514,7 +587,7 @@ class Project:
 
         return self.figure.legend(handles, labels, **kwdargs)
 
-    def find_axes(self, xlabel=None, ylabel=None):
+    def _find_axes(self, xlabel=None, ylabel=None):
         if xlabel and ylabel:
             for ax in self.figure.get_axes():
                 print(f"testing {ax.get_xlabel()} and {ax.get_ylabel()}")
@@ -534,7 +607,7 @@ class Project:
                     return ax
             return None
 
-    def set_x_y_label(self, ax, x, y, color="k"):
+    def _set_x_y_label(self, ax, x, y, color="k"):
         unitx = self.gv[x]
         unity = self.gv[y]
         if x in self.gm:
@@ -549,7 +622,7 @@ class Project:
             ax.set_xlabel(xlabel, color=color)
 
         # tries to find a compatible axes, axes are compatible if they have the same x and y labels
-        axtra = self.find_axes(xlabel=xlabel, ylabel=ylabel)
+        axtra = self._find_axes(xlabel=xlabel, ylabel=ylabel)
         # print(f"current axes x = {xlabel} & y = {ylabel}")
         if axtra:
             # print(f"axes found for x = {xlabel} & y = {ylabel}")
@@ -589,7 +662,7 @@ class Project:
     ):
         raw_x = self.data[x]
         raw_y = self.data[y]
-        axes = self.set_x_y_label(ax=axes, x=x, y=y, color=style)
+        axes = self._set_x_y_label(ax=axes, x=x, y=y, color=style)
 
         if errors:
             errs = dict()
@@ -616,158 +689,12 @@ class Project:
 
         # axes.legend(loc=0)
 
-    # need to be changed to be more general currently it is tailored to g Erdbeschleunigung
-    def plot_linear_reg(
-        self,
-        x,
-        y,
-        labels,
-        show_lims=False,
-        xerr=False,
-        offset=[0, 0],
-        units=[r"$s^2$", r"$s^2$"],
-        title="",
-    ):
-        """Calculates the linear regression of data given and plot it
-
-        :x: TODO
-        :y: TODO
-        :returns: TODO
-
-        """
-        plt.cla()
-        plt.scatter(x, y, c="b", marker=".", label="Data")
-        try:
-            if xerr:
-                plt.errorbar(
-                    x,
-                    y,
-                    xerr=self.data[f"d{x.name}"],
-                    yerr=self.data[f"d{y.name}"],
-                    fmt="none",
-                    capsize=3,
-                )
-            else:
-                plt.errorbar(x, y, yerr=self.data[f"d{y.name}"], fmt="none", capsize=3)
-        except Exception as e:
-            print(e)
-
-        x_fit = np.linspace(min(x), max(x), 100)
-        lmod = LinearModel()
-        pars = lmod.guess(y, x=x)
-        out = lmod.fit(y, pars, x=x)
-        plt.plot(x_fit, out.eval(x=x_fit), "r-", label="best fit")
-        print(out.fit_report(min_correl=0.25))
-        print(out.values)
-        for i, (name, param) in enumerate(out.params.items()):
-            print("{:7s} {:11.5f} {:11.5f}".format(name, param.value, param.stderr))
-            deci = -orderOfMagnitude(param.stderr)
-            print(deci)
-            if deci < 0:
-                deci = 1
-            plt.text(
-                s=rf"${name} = {format(round(param.value, deci), f'.{deci}f')} \pm {round_up(param.stderr, deci)}$ "
-                + units[i],
-                bbox={"facecolor": "#616161", "alpha": 0.85},
-                x=(max(x) - min(x)) / 100 * (5 + offset[0]) + min(x),
-                y=(max(y) - min(y)) * (offset[1] / 100 + (i + 1) / 7) + min(y),
-                fontsize=10,
-            )
-
-        if show_lims:
-            upper = Parameters()
-            lower = Parameters()
-            for name, param in out.params.items():
-                upper.add(name, value=(param.value + param.stderr))
-                lower.add(name, value=(param.value - param.stderr))
-            plt.plot(x_fit, out.eval(params=upper, x=x_fit), label="Obere Schranke")
-            plt.plot(x_fit, out.eval(params=lower, x=x_fit), label="Untere Schranke")
-        # plt.annotate(
-        #     rf"${name} = {format(round(param.value, deci), f'.{deci}f')} \pm {round_up(param.stderr, deci)}" + r"\frac{\mathrm{m}}{\mathrm{s}^{2}}$",
-        #     xy=(x[0], y[0]),
-        #     bbox={'facecolor': '#616161', 'alpha': 0.85},
-        #     xytext=((max(x) - min(x)) / 100 * (5 + offset[0]) + min(x),
-        #             (max(y) - min(y)) * (offset[1] / 100 + (i + 1) / 7) + min(y)),
-        #     fontsize=10, arrowprops=dict(arrowstyle="-"))
-        # for i, val, err in zip(count(), popt, stdevs):
-        #     plt.annotate(
-        #         rf"$R_i = {format(round(val, deci), f'.{deci}f')} \pm {round_up(err, deci)}" + r"\frac{\mathrm{m}}{\mathrm{s}^{2}}$",
-        #         xy=(x[0], y[0]),
-        #         bbox={'facecolor': '#616161', 'alpha': 0.85},
-        #         xytext=((max(x) - min(x)) / 100 * 5 + min(x), (max(y) - min(y)) / 7 * (i + 1) + min(y)),
-        #         fontsize=13, arrowprops=dict(arrowstyle="-"))
-
-        print(out.redchi)
-
-        # X = x.to_numpy().reshape(-1, 1)
-        # Y = y.to_numpy().reshape(-1, 1)
-        # reg = LinearRegression().fit(X, Y)
-        # x_fit = np.linspace(min(X), max(X), 100)
-        # y_fit = reg.predict(x_fit)
-        # popt, pcov = curve_fit(linear_func, x, y, sigma=self.data[f"d{y.name}"], absolute_sigma=True)
-        #
-        # # this section is for testing where x and y have errors in them
-        # data = RealData(x, y, self.data[f"d{x.name}"], self.data[f"d{y.name}"])
-        # model = Model(linear_odr)
-        #
-        # odr = ODR(data, model, [-0.1, 1.5])
-        # odr.set_job(fit_type=2)
-        # output = odr.run()
-        # print("Section using ODR")
-        # print(output.beta)
-        # print(output.sd_beta)
-        # # end testing section
-        # stdevs = np.sqrt(np.diag(pcov))
-        # print("Section using Curve_Fit")
-        # print(popt)
-        # print(stdevs)
-        #
-        # if show_lims:
-        #     plt.plot(x_fit, linear_odr(output.beta + output.sd_beta, x_fit), label="Obere Schranke")
-        #     plt.plot(x_fit, linear_odr(output.beta - output.sd_beta, x_fit), label="Untere Schranke")
-        # # for i, val, err in zip(count(), popt, stdevs):
-        # #     plt.annotate(
-        # #         rf"$R_i = {format(round(val, deci), f'.{deci}f')} \pm {round_up(err, deci)}" + r"\frac{\mathrm{m}}{\mathrm{s}^{2}}$",
-        # #         xy=(x[0], y_fit[0]),
-        # #         bbox={'facecolor': '#616161', 'alpha': 0.85},
-        # #         xytext=((max(x) - min(x)) / 100 * 5 + min(x), (max(y_fit) - min(y_fit)) / 7 * (i + 1) + min(y_fit)),
-        # #         fontsize=13, arrowprops=dict(arrowstyle="-"))
-        # deci = 3
-        # plt.annotate(
-        #     rf"$R_i = {format(abs(round(output.beta[0], deci)), f'.{deci}f')} \pm {round_up(output.sd_beta[0], deci)}" + r" \Omega$",
-        #     xy=(x[0], y_fit[0]),
-        #     bbox={'facecolor': '#616161', 'alpha': 0.85},
-        #     xytext=((max(x) - min(x)) / 100 * 5 + min(x), (max(y_fit) - min(y_fit)) / 7 + min(y_fit)),
-        #     fontsize=13, arrowprops=dict(arrowstyle="-"))
-        #
-        # deci = 4
-        # plt.annotate(
-        #     rf"$U_0 = {format(round(output.beta[1], deci), f'.{deci}f')} \pm {round_up(output.sd_beta[1], deci)}$" + r" V",
-        #     xy=(x[0], y_fit[0]),
-        #     bbox={'facecolor': '#616161', 'alpha': 0.85},
-        #     xytext=((max(x) - min(x)) / 100 * 5 + min(x), (max(y_fit) - min(y_fit)) / 7 * (1 + 1) + min(y_fit)),
-        #     fontsize=13, arrowprops=dict(arrowstyle="-"))
-        #
-        # plt.annotate("$R^{2}$:" + str(floor(reg.score(X, Y) * 10000) / 100) + "%", xy=(x_fit[0], y_fit[0]),
-        #              bbox={'facecolor': '#616161', 'alpha': 0.85},
-        #              xytext=((max(x) - min(x)) / 100 * 35 + min(x), (max(y_fit) - min(y_fit)) / 7 * 6 + min(y_fit)),
-        #              fontsize=13, arrowprops=dict(arrowstyle="-"))
-        #
-        # plt.plot(x_fit, y_fit, c='r', label="Linearer Fit")
-        plt.xlabel(labels[0])
-        plt.ylabel(labels[1])
-        plt.title(title)
-        # plt.title("Klemmspannung in Abhängigkeit vom Strom Messungen einer Batterie")
-        plt.legend(loc=0)
-        # plt.show()
-        plt.savefig(
-            f"lin_reg_{x.name}_{y.name}_messreihe_{self.load_data_counter}.png", dpi=400
-        )
-
     def expr_to_np(self, expr):
+        """Converts a Sympy Expression to a numpy calculatable function"""
         return simp.lambdify(tuple(expr.free_symbols), expr, "numpy")
 
     def apply_df(self, expr):
+        """Uses expr and internal data to calculate the value described by expr"""
         function_data = dict()
         if hasattr(expr, "lhs"):
             for var in expr.free_symbols:
@@ -784,6 +711,7 @@ class Project:
             return self.expr_to_np(expr)(**function_data)
 
     def apply_df_err(self, expr):
+        """Uses expr and internal data to calculate the error described by expr"""
         function_data = dict()
         err_expr = self.error_func(expr=expr)
         for var in err_expr.free_symbols:
@@ -793,6 +721,7 @@ class Project:
         return self.expr_to_np(expr=err_expr)(**function_data)
 
     def error_func(self, expr):
+        """Uses expr and find its groessenunsicherheits methoden representation"""
         vs = list(ordered(expr.free_symbols))
 
         def gradient(f, vs):
@@ -808,6 +737,7 @@ class Project:
         return e_func
 
     def find_min_sign_changes(self, df, identifier):
+        """Operation on data column <identifier> find places where a sign flip happend"""
         vals = df[identifier].values
         abs_sign_diff = np.abs(np.diff(np.sign(vals) + (vals == 0)))
         # idx of first row where the change is
@@ -832,12 +762,14 @@ class Project:
         self.data = self.data[self.data["t"].between(start, end)]
         return pz
 
-    def rms_wave(self, x, y, f):
+    def rms_wave(self, x, y):
+        """Calculates the RMS value of x and y data"""
         I1 = integrate.simpson(y ** 2, x)
         rms = np.sqrt(I1 / (max(x) - min(x)))
         return rms
 
-    def avr_wave(self, x, y, f):
+    def avr_wave(self, x, y):
+        """Calculates the AVR value of x and y data"""
         I1 = integrate.trapz(abs(y), x)
         avr = I1 / (max(x) - min(x))
         return avr
@@ -882,7 +814,7 @@ class Project:
         # p22nt(y_data)
 
         # try:
-        self.set_x_y_label(axes, x, y)
+        self._set_x_y_label(axes, x, y)
         # except AttributeError as e:
         #     self.set_x_y_label(axes, x, str(expr))
 
@@ -988,7 +920,7 @@ class Project:
         else:
             # out = mod.fit(y_fit, pars,scale_covar=False, **independent_vars)
             out = mod.fit(y_fit, pars, **independent_vars)
-        axes = self.set_x_y_label(ax=axes, x=x, y=y)
+        axes = self._set_x_y_label(ax=axes, x=x, y=y)
         if add_fit_params:
             paramstr = "\n".join(
                 [
@@ -1048,6 +980,7 @@ class Project:
         print(out.fit_report(min_correl=0.25))
 
     def savefig(self, name, clear=True):
+        """Use this method to save your figures"""
         self.figure.savefig(f"./Output/{self.name}/" + name, dpi=400)
         if clear:
             self.figure.clear()
@@ -1055,6 +988,7 @@ class Project:
             return ax
 
     def add_text(self, axes, keyvalue, offset=[0, 0]):
+        """Write text inside on an axes"""
         # maxes = max([_.zorder for _ in axes.get_children()])
         # print(maxes)
         maxes = axes
