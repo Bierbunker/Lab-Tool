@@ -5,6 +5,8 @@ import pandas as pd
 from labtool_ex2 import Project
 from uncertainties import ufloat
 from uncertainties import umath
+from uncertainties.core import format_num
+from uncertainties import unumpy
 
 
 if __name__ == "__main__":
@@ -261,6 +263,15 @@ if __name__ == "__main__":
         add_fit_params=True,
         granularity=10000,
     )
+    test = ufloat(68, 1.4)
+    df = pd.DataFrame(
+        {"x": [ufloat(11, 1) * 1e8, ufloat(11, 1)], "y": [ufloat(11, 1), ufloat(11, 1)]}
+    )
+    print(df)
+    # arr = unumpy.uarray([1, 2], [0.01, 0.002])
+    P.print_ftable(df, name="test", split=False)
+
+    print(test.__format__("").split(r"+/-"))
 
     ax.set_title(f"Leistungskurve am Lastwiderstand")
     P.ax_legend_all(loc=1)
