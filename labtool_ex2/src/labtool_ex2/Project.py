@@ -34,11 +34,13 @@ from pathlib import Path
 
 from sympy import Matrix, hessian, lambdify
 
+
+# dont fucking move this line
+
 matplotlib.use("Agg")
 from matplotlib.legend import _get_legend_handles_labels
 import matplotlib.pyplot as plt
 
-from .Equation import Equation  # relative import
 from .LatexPrinter import latex
 
 # from math import floor
@@ -49,23 +51,14 @@ DataFrameLike = UArrayLike = ItDepends = Any
 printing.init_printing(use_latex=True)
 
 
-def round_up(n, decimals=0):
-    multiplier = 10 ** decimals
-    return math.ceil(n * multiplier) / multiplier
-
-
-def orderOfMagnitude(number):
-    return math.floor(math.log(number, 10))
-
-
 class Project:
     def __init__(self, name, global_variables=dict(), global_mapping=dict(), font=10):
         self.name = name
-        self.equations = dict()
+        # self.equations = dict()
         self.gm = global_mapping
         self.gv = global_variables
         self.figure = plt.figure()
-        self.data_path = list()
+        # self.data_path = list() glob internal PATH variable
         # BEGIN these are currently not used but maybe in the future
         self.messreihen_dfs = list()
         self.working_dfs = list()
@@ -153,7 +146,7 @@ class Project:
         self.dfs[name] = self.data
 
     def find_possible_zero(self, identifier):
-        """Finds possible zeros in the dataset on a column identifier"""
+        """Finds possible zeros in the dataset on a column <identifier>"""
         return self.data[~self.data[identifier].astype(bool)]
 
     def interpolate(self):
@@ -548,13 +541,15 @@ class Project:
 
     def figure_legend(self, **kwargs):
         """
-        This function is used to add a legend to a figure for printing this is the preferred function to use
+        This function is used to add a legend to a figure for printing.
+        This is the preferred function to use.
+        For kwargs see https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.legend.html
         """
         self.figure.legend(*_get_legend_handles_labels(self.figure.axes), **kwargs)
 
     def ax_legend_all(self, **kwargs):
         """
-        This function adds all legend to the first axes don't use this use figure_legend
+        This function adds all legend to the first axes don't use this, use figure_legend
         """
         self.figure.get_axes()[0].legend(
             *_get_legend_handles_labels(self.figure.axes), **kwargs
@@ -689,8 +684,8 @@ class Project:
 
         # axes.legend(loc=0)
 
-    def expr_to_np(self, expr):
-        """Converts a Sympy Expression to a numpy calculatable function"""
+    def _expr_to_np(self, expr):
+        """Converts a Sympy Expression to a numpy calculable function"""
         return simp.lambdify(tuple(expr.free_symbols), expr, "numpy")
 
     def apply_df(self, expr):
@@ -702,25 +697,25 @@ class Project:
                 if var is not expr.lhs:
                     series = self.data[var]
                     function_data[var] = series.to_numpy()
-            return self.expr_to_np(expr)(**function_data)
+            return self._expr_to_np(expr)(**function_data)
         else:
             for var in expr.free_symbols:
                 var = str(var)
                 series = self.data[var]
                 function_data[var] = series.to_numpy()
-            return self.expr_to_np(expr)(**function_data)
+            return self._expr_to_np(expr)(**function_data)
 
     def apply_df_err(self, expr):
         """Uses expr and internal data to calculate the error described by expr"""
         function_data = dict()
-        err_expr = self.error_func(expr=expr)
+        err_expr = self._error_func(expr=expr)
         for var in err_expr.free_symbols:
             var = str(var)
             series = self.data[var]
             function_data[var] = series.to_numpy()
-        return self.expr_to_np(expr=err_expr)(**function_data)
+        return self._expr_to_np(expr=err_expr)(**function_data)
 
-    def error_func(self, expr):
+    def _error_func(self, expr):
         """Uses expr and find its groessenunsicherheits methoden representation"""
         vs = list(ordered(expr.free_symbols))
 
@@ -754,12 +749,12 @@ class Project:
         min_idx = np.abs(vals[change_idx]).argmin(1)
         return df.iloc[change_idx[range(len(change_idx)), min_idx]]
 
-    def probe_for_zeros(self, start, end, identifier):
+    def probe_for_zeros(self, start, end, identifier, filter):
         # TODO remove t filter
-        pz = self.find_min_sign_changes(self.data, identifier)["t"]
+        pz = self.find_min_sign_changes(self.data, identifier)[filter]
         pz = pz[pz.between(start, end)]
         print(pz)
-        self.data = self.data[self.data["t"].between(start, end)]
+        self.data = self.data[self.data[filter].between(start, end)]
         return pz
 
     def rms_wave(self, x, y):
@@ -831,7 +826,6 @@ class Project:
                 axes.fill_between(
                     x_data, y_data - dely, y_data + dely, color=style, alpha=0.4
                 )
-        # axes.legend(loc=0)
 
     def plot_fit(
         self,
