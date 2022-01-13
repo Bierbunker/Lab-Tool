@@ -1,12 +1,8 @@
 import sympy as simp
 from sympy import sin, pi
-import numpy as np
 import pandas as pd
 from labtool_ex2 import Project
 from uncertainties import ufloat
-from uncertainties import umath
-from uncertainties.core import format_num
-from uncertainties import unumpy
 
 
 if __name__ == "__main__":
