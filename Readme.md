@@ -1,28 +1,26 @@
 # Lab-Tool - A Python based lab-data visualization tool
 
-Lab-Tool is a python script, that can be used to process and visualize data primarily from physics experiments. 
+Lab-Tool is a python package that can be used to process and visualize data
+obtained primarily from physical experiments.
 
-## Overview & Features
+## Features
 
-Features include: 
-* Error propagation using uncertainty package
-* LaTeX table snippets 
-* Visualizations using matplotlib
+* Error propagation using the uncertainties package
+* Visualization using the matplotlib package
+* LaTeX table snippets
 
-## Get Started 
+## Getting Started
 
-Clone the Repo and run the getpackages script which will install the required 
+Lab-Tool is provided as python package and hosted on the Python Package Index.
+In order to install the package please run ```pip install labtool-ex2```.
 
-* Python3 
-* pip3 
+If you plan on using the latex snippets you need to have the packages
+**tabularray** and **siunitx** installed. A full installation of
+**Texlive 2021** is recommended.
 
-### Prerequisites for LaTeX snippets
-To ensure that the LaTeX snippets compile one must have the following packages installed:
-* tabularray
-* siunitx
+## Documentation
 
-to ensure smooth operation a **full** installation of **Texlive 2021** is recommended. 
-
-## TODO add other Infos
-
-test webhook
+Documentation can be found in the
+[Wiki](https://github.com/Bierbunker/Lab-Tool/wiki). Please note that Lab-Tool
+is currently under heavy development and might introduce breaking changes at any
+time.
