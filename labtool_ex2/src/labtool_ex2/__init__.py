@@ -4,3 +4,6 @@ __version__ = "0.0.1"
 from .Equation import *
 from .Project import *
 from .Project import Project as Project  # noqa
+from . import monkeypatch_uncertainties as mpatch
+
+mpatch.display()
