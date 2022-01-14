@@ -1,0 +1,63 @@
+\RequirePackage{tabularray}  % like \usepackage but for packages
+\UseTblrLibrary{siunitx}  % siunitx suited for tabularray
+% TRIPLE BRACKETS {{{}}} to protect strings from \num{} interpretation in S columns
+\UseTblrLibrary{diagbox}  % diagbox suited for tabularray
+\UseTblrLibrary{varwidth}  % measure cell width using package 'varwidth'
+
+% standard environment
+\SetTblrInner{
+    hlines,
+    vlines,
+    columns={
+            halign=c,
+            valign=m,
+        },
+    measure=vbox,
+}
+
+% X columns
+\NewTblrEnviron{tblrx}
+\SetTblrInner[tblrx]{
+    hlines,
+    vlines,
+    columns={
+            halign=c,
+            valign=m,
+            co=1,  % coefficient of width for expendable columns (X columns)
+        },
+    width=\linewidth,
+    vspan=minimal,
+    measure=vbox,
+}
+
+% -X columns
+\NewTblrEnviron{tblr-x}
+\SetTblrInner[tblr-x]{
+    hlines,
+    vlines,
+    columns={
+            halign=c,
+            valign=m,
+            co=-1,  % shrinks X column down to natural width
+        },
+    width=\linewidth,
+    vspan=minimal,
+    measure=vbox,
+}
+
+% no hline and vline left and on top of first cell
+\NewTblrEnviron{tblr_omit_first_cell}
+\SetTblrInner[tblr_omit_first_cell]{
+    hlines,
+    vlines,
+    columns={
+            halign=c,
+            valign=m,
+        },
+    hspan=even,
+    vspan=minimal,
+    %
+    hline{1}={1}{white},  % first row, only first cell
+    vline{1}={1}{white},
+    measure=vbox,
+}

@@ -1,0 +1,2 @@
+recursive-include data *.tex
+recursive-include data *.bib

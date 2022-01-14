@@ -1,0 +1,226 @@
+\usepackage{iftex}
+
+% text input and font
+\ifluatex  % LuaLaTeX
+    \usepackage{fontspec}
+    % main font automatically: Latin Modern
+    %\setmonofont{Consolas}
+    \newfontfamily{\Consolas}{Consolas}
+\else  % pdfLaTeX
+    \usepackage[utf8]{inputenc}  % input in UTF-8
+    \usepackage[T1]{fontenc}  % output in T1 fonts (west European encoding)
+    \usepackage{lmodern}  % Latin modern font for main text
+    \usepackage[mono]{zi4}  % Consolas font for monospaced text
+    \newfontfamily{\Consolas}{\fontfamily{zi4}}
+\fi
+
+% text processing
+\usepackage{babel}  % language package
+\usepackage[intlimits]{mathtools}  % upgrade of amsmath (automatically loaded) - \int^_ like \limits^_
+\usepackage{amssymb}  % upgrade of amsfonts (American Math Society)
+\usepackage{amstext}  % \text command in math environments
+%\usepackage{bm}  % bold math fonts
+\usepackage{physics}  % macros for easier typesetting of physical formulas
+\usepackage{letltxmacro}  % \let command for robust macros (new sqrt)
+\usepackage{chemformula}  % typeset chemical formulas
+
+
+% page geometry
+\usepackage{scrlayer-scrpage}  % page formatting with KOMA options
+\usepackage[paper=a4paper, hmargin=3cm, vmargin=2.5cm, includehead, includefoot]{geometry}  % horizontal: 3cm, vertical: 2.5cm strict with or without headers and footers
+\usepackage{tabto}  % tab stops
+\NumTabs{8}  % 8 equally spaced of \textwidth tab stops
+
+
+
+% floats
+\usepackage[hypcap=false, labelfont=bf]{caption, subcaption}  % caption editing - hypcap warning with hyperref
+\usepackage{float}  % for [H] (forced here) specifier
+\usepackage{tabularray}
+\usepackage{diagbox}  % table cells with diagonal lines
+
+
+% graphical input
+\usepackage{graphicx}  % input JPEG, PNG, PDF, etc.
+\usepackage{pdfpages}  % input PDF as whole pages
+\usepackage{lastpage}  % reference to last page
+\usepackage{pgfplots}  % for tikzplotlib
+\usepgfplotslibrary{groupplots,dateplot}
+\usetikzlibrary{patterns,shapes.arrows}
+\pgfplotsset{compat=newest}
+\usepackage{import}
+
+
+% text
+\usepackage[locale=DE, uncertainty-mode=separate]{siunitx}  % SI units, German formatting - \pm stays \pm instead of ..(.)
+\usepackage{icomma}  % no space after commas instead of English points) in decimal values
+\usepackage{enumitem}  % better enumerating with style options
+\usepackage{nicefrac}  % inline-fractions in n/d-style
+\usepackage{xcolor}  % custom colors
+\usepackage{listings, scrhack}  % code display; listings in combination with KOMA
+\usepackage{fancyvrb}  % Verbatim environment with better options (capital V!)
+
+
+% literacy
+\usepackage[style=apa]{biblatex}  % backend=Biber is standard
+\usepackage{csquotes}  % better quotation - should also be used in combination with package babel (warning)
+\usepackage{xurl}  % breaks links - after BibLaTeX, but before hyperref!
+\usepackage[hidelinks]{hyperref}  % produces most errors, last to load
+
+
+% KOMA setups
+% header and footer
+\pagestyle{scrheadings}  % KOMA style
+\clearpairofpagestyles  % reset
+\setkomafont{pageheadfoot}{\normalfont}  % standard font in header and footer
+\setlength{\headheight}{27.2pt}  % just look at the warning
+\cfoot{\pagemark{} / \pageref*{LastPage}}  % center foot - *: ref but no hyperlink
+% {}: empty statement
+% \ : protected space
+% \,: small space
+\DeclareTOCStyleEntry{dottedtocline}{section}  % sections in TableOfContents with dotted lines
+\KOMAoptions{parskip=half-}  % paragraphs with half a line height space instead of indentation, last line with no special treatment
+
+
+% package setups
+
+% biblatex
+\addbibresource{files/JabRef_Database/physics.bib}
+
+% rewrite names (babel overwrites German with standard English names, therefore at document beginn [after everything is loaded])
+\AtBeginDocument{\renewcommand{\refname}{Literaturverzeichnis}}
+% others:
+% \contentsname
+% \listtablename
+% \listfigurename
+
+
+% xcolor
+\definecolor{code_keyword}{HTML}{A06E9D}
+\definecolor{code_string}{HTML}{AD6E3E}
+\definecolor{code_comment}{HTML}{6A9955}
+%\definecolor{code_basic}{HTML}{D4D4D4}
+%\definecolor{code_background}{HTML}{1E1E1E}
+
+% siunitx
+\DeclareSIUnit{\dig}{dig}  % digits for uncertainty of electronical measurement devices
+
+
+% listings
+\lstdefinestyle{python}{
+    basicstyle=\Consolas\footnotesize,%\color{code_basic},  % \footnotesize contains \selectfont implicitly
+    %backgroundcolor=\color{code_background},
+    commentstyle=\color{code_comment},
+    keywordstyle=\bfseries\color{code_keyword},
+    numberstyle=\tiny,
+    stringstyle=\color{code_string},
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=5pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2,
+}
+\lstset{style=python}
+\ifPDFTeX
+    \renewcommand*{\ttdefault}{lmvtt}  % Latin Modern Typewriter Proportional
+\fi
+
+
+% new sqrt
+% https://en.wikibooks.org/wiki/LaTeX/Mathematics
+\makeatletter
+\let\oldr@@t\r@@t
+\def\r@@t#1#2{%
+    \setbox0=\hbox{$\oldr@@t#1{#2\,}$}\dimen0=\ht0
+    \advance\dimen0-0.2\ht0
+    \setbox2=\hbox{\vrule height\ht0 depth -\dimen0}%
+    {\box0\lower0.4pt\box2}}
+\LetLtxMacro{\oldsqrt}{\sqrt}
+\renewcommand*{\sqrt}[2][\ ]{\oldsqrt[#1]{#2} }
+\makeatother
+
+
+% own commands
+% \newcommand* can't contain multiple lines
+% \newcommand can
+\newcommand*{\mup}[1]{\ensuremath{\text{\textup{#1}}}}  % upright normal font in math mode
+\newcommand*{\inkgraphics}[3][\linewidth]{\def\svgwidth{#1}\import{#2}{#3}}
+
+
+% tabularray
+% imports_and_setups{
+%     expl3,
+%     xparse,
+%     ninecolors
+%     \hypersetup{pdfborder={0 0 0}}
+% }
+
+% tabularray environments
+\RequirePackage{tabularray}  % like \usepackage but for packages
+\UseTblrLibrary{siunitx}  % siunitx suited for tabularray
+% TRIPLE BRACKETS {{{}}} to protect strings from \num{} interpretation in S columns
+\UseTblrLibrary{diagbox}  % diagbox suited for tabularray
+\UseTblrLibrary{varwidth}  % measure cell width using package 'varwidth'
+
+% standard environment
+\SetTblrInner{
+    hlines,
+    vlines,
+    columns={
+            halign=c,
+            valign=m,
+        },
+    measure=vbox,
+}
+
+% X columns
+\NewTblrEnviron{tblrx}
+\SetTblrInner[tblrx]{
+    hlines,
+    vlines,
+    columns={
+            halign=c,
+            valign=m,
+            co=1,  % coefficient of width for expendable columns (X columns)
+        },
+    width=\linewidth,
+    vspan=minimal,
+    measure=vbox,
+}
+
+% -X columns
+\NewTblrEnviron{tblr-x}
+\SetTblrInner[tblr-x]{
+    hlines,
+    vlines,
+    columns={
+            halign=c,
+            valign=m,
+            co=-1,  % shrinks X column down to natural width
+        },
+    width=\linewidth,
+    vspan=minimal,
+    measure=vbox,
+}
+
+% no hline and vline left and on top of first cell
+\NewTblrEnviron{tblr_omit_first_cell}
+\SetTblrInner[tblr_omit_first_cell]{
+    hlines,
+    vlines,
+    columns={
+            halign=c,
+            valign=m,
+        },
+    hspan=even,
+    vspan=minimal,
+    %
+    hline{1}={1}{white},  % first row, only first cell
+    vline{1}={1}{white},
+    measure=vbox,
+}

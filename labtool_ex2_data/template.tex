@@ -1,0 +1,141 @@
+% Protokoll-Template
+% by Andreas Zach
+
+
+% class
+\documentclass[ngerman]{scrartcl}
+
+% input preamble
+\input{input/shared_preamble.tex}
+
+% manual header
+\ihead{Versuchsname}  % inner (left) head
+\chead{\textsc{Zach} Andreas (12004790)}  % center head
+\ohead{Datum der Messung}  % outer (right) head
+
+
+
+\begin{document}
+
+\includepdf{deckblatt.pdf}
+
+\clearpage
+\tableofcontents
+\newpage
+
+\section{Aufgabenstellung}
+\label{sec:aufgabenstellung}
+
+
+
+\section{Grundlagen und Voraussetzungen}
+\label{sec:grundlagen_voraussetzungen}
+
+Text1\footcite[1000]{ref:dem1} \\
+Text2\footcite[Kapitel 74]{ref:knoll} \\
+Text3\footnote{\url{https://online.uni-graz.at/kfu_online/ee/ui/ca2/app/desktop/\#/login?$ctx=&redirect=Li4vLi4vLi4vZWUvdWkvY2EyL2FwcC9kZXNrdG9wLyMvc2xjLnRtLmNwL3N0dWRlbnQvY291cnNlcy82Mjg3OTk=}} \\  % must escape the # (\#), error otherwise!!
+Text4\footcite{ref:genol2013}
+%
+% Gleichungsumgebung
+\begin{equation}
+    \label{eq:grenzen-oben-unten}
+    \int_a^b x^2 \dd{x} =\frac{b^3-a^3}{3}  % \, -> small space, single character exponent doesn't need curly braces
+\end{equation}
+%
+% inline math
+Inline math: \(\lim_{n \to \infty} \left( 1 + \frac{1}{n} \right) ^{n} = e\)  \\ \\ % new, encouraged  % _ in inline math: no limits - in display math: limits
+Inline math: $\lim \limits_{n \to \infty} \frac{1}{2n} = 0$  % old, discouraged
+%
+% display math
+\begin{displaymath}
+    \sqrt[3]{27} = 3 \implies \va{A} \cross \va{B} \implies \SI{30.0(2)}{\meter\per\second}
+\end{displaymath}
+%
+Display math: \[\lim_{n \to \infty} \left( 1 + \frac{1}{n} \right) ^{n} = e\]  \\ \\ % new, encouraged  % _ in inline math: no limits - in display math: limits
+\[ \int \frac{1}{x} \dd{x} = \ln|x| \qq{quad text, additionaly:} \dv{f}{x} \land \pdv{g}{y}\]  % new, encouraged - same as \begin{equation*} when using amsmath
+$$ \vb*{F} = m \cdot \vb*{a} = \dot{\mup{p}}$$  % old, very discouraged
+
+Test: \texttt{typewriter}
+
+\subsection{Unsicherheitsberechnungen}
+\label{subsec:unsicherheitsberechnungen}
+
+Die explizit angegebenen Unsicherheiten der ermittelten Messgrößen basieren auf Berechnungen durch die Unsicherheitsangabe nach den Datenblättern der verwendeten Messgeräte. Diese sind in \autoref{tab:geraeteliste} vermerkt beziehungsweise referenziert.
+
+Die Fehlerfortpflanzung der berechneten Werte basiert auf der verallgemeinerten Methode der Gauß'schen Fehlerfortpflanzung.
+\[\vb*{\Sigma}_{\vb*{y}} = \vb{J}(\vb*{x}) \, \vb*{\Sigma}_{\vb*{x}} \, \vb{J}^*(\vb*{x})\]
+Dabei beschreibt $\displaystyle \vb*{\Sigma}_{\vb*{i}}$ die Kovarianzmatrix des Vektors $\vb*{i}$ und $\vb{J}(\vb*{i})$ die Jakobi-Matrix desselben. Die zweite Matrix $\vb{J}^*(\vb*{i})$ beschreibt die Hermetisch-konjungierte der Jakobi-Matrix. Um diese Berechnungen effizient auszuführen, wird für jeden Unterpunkt der Laborübung ein Skript in der Programmiersprache \texttt{Python} implementiert. Kernstück dessen ist das package \href{https://github.com/lebigot/uncertainties}{\texttt{uncertainties}}\footcite{ref:uncertainties}, dass intern die Matrixmultiplikationen berechnet. Gerundet wird nach den Angaben des Skriptums der Lehrveranstaltung \enquote{Einführung in die physikalischen Messmethoden} in der gültigen Version 7.\footcite{ref:messmethoden}
+
+
+
+\section{Versuchsanordnung}
+\label{sec:versuchsanordnung}
+
+
+
+\section{Geräteliste}
+\label{sec:geraeteliste}
+
+\begin{table}[H]
+    \centering
+    \begin{samepage}  % caption and table on same page
+        \caption[Geräteliste]{Verwendete Geräte und wichtige Materialien}  % optional argument for List of Tables, mandatory argument for caption
+        \label{tab:geraeteliste}
+        \begin{tblrx}{
+                colspec={
+                        *{3}{Q}  % multiplication syntax: *{n}{thing}
+                        S[table-format=2.2]
+                        Q[co=0]  % Q column for not overwriting standard values of preamble (no extendable width in order to work with diagbox)
+                    },
+                cell{2}{2}={r=2}{},  % empty specifier for not overwriting standard values of preamble
+                cell{4}{3}={r=2,c=2}{},
+            }
+            Gerät   & Hersteller & Modell   & {{{Unsicherheit}}}    & Anmerkung                             \\
+            Gerät 1 & ich        & meins    & 0.01                  & {quasi \\ perfekt \\ genau}           \\
+            Gerät 2 &            & passt so & 21.4                  & quasi perfekt genau                   \\
+            Gerät 3 & -          & passt so &                       & $\nabla$                              \\
+            Gerät 4 & -          &          &                       & \diagbox[dir=NE]{Alle meine}{Entchen} \\  % if diagbox is not the widest column, width must be typeset manually -.-
+        \end{tblrx}
+    \end{samepage}
+\end{table}
+
+
+
+\section{Versuchsdurchführung und Messergebnisse}
+\label{sec:versuchsdurchfuehrung_messergebnisse}
+
+
+
+\section{Auswertung}
+\label{sec:auswertung}
+
+
+
+\section{Diskussion}
+\label{sec:diskussion}
+
+
+
+\section{Zusammenfassung}
+\label{sec:zusammenfassung}
+
+
+
+\addsec{Python-Skript}
+\label{sec:python}
+
+\lstinputlisting[language=Python]{../../labtool/__init__.py}
+
+
+
+\clearpage
+% Literaturverzeichnis
+\printbibliography
+
+% Abbildungsverzeichnis
+\listoffigures
+
+% Tabellenverzeichnis
+\listoftables
+
+\end{document}
