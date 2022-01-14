@@ -1,2 +1,2 @@
-recursive-include data *.tex
-recursive-include data *.bib
+recursive-include labtool_ex2_data *.tex
+recursive-include labtool_ex2_data *.bib
