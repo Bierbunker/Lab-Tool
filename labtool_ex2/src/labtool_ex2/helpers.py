@@ -1,4 +1,5 @@
 import math
+
 from pathlib import Path
 from shutil import rmtree #! only for testing remove later
 
@@ -9,7 +10,6 @@ def round_up(n, decimals=0):
 
 def orderOfMagnitude(number):
     return math.floor(math.log(number, 10))
-
 
 def init_folder(root_path, root_folder_name):
     """Init empty folders for a typical Latex-File with python scripts in it's own folder.

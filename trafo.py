@@ -264,7 +264,7 @@ if __name__ == "__main__":
     )
     print(df)
     # arr = unumpy.uarray([1, 2], [0.01, 0.002])
-    P.print_ftable(df, name="test", split=False)
+    P.print_ftable(df, name="test", split=True)
 
     print(test.__format__("").split(r"+/-"))
 

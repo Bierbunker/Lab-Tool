@@ -314,8 +314,7 @@ class Project:
             with open(f"./Output/{self.name}/messreihe_{df.name}.tex", "w") as tf:
                 tf.write(df.to_latex(escape=False))
 
-    def print_ftable(self, df, name=None, format="standard", split=False):
-
+    def print_ftable(self, df, name=None, format="standard", split=False, is_udf=True):
         # andi vorschlag Table(Dataframe) object erstellen welches eine flag hat um zu sehen ob es aus uarrays besteht
         # if df.ucoll
         numColumns = df.shape[1]
@@ -347,12 +346,18 @@ class Project:
         if split:
 
             def format_value(x):
-                fmt_x = x.__format__("S")
+                fmt_x = x.__format__("")
                 if "e" in fmt_x:
                     val, exp = fmt_x.split("e", 1)
-                    val = val.replace("(", "e" + exp + " & ").replace(")", "e" + exp)
+                    val = (
+                        val.replace("+/-", "e" + exp + " & ")
+                        .replace("(", "")
+                        .replace(")", "")
+                        + "e"
+                        + exp
+                    )
                 else:
-                    val = fmt_x.replace("(", " & ").replace(")", "")
+                    val = fmt_x.replace("+/-", " & ")
                 print(val)
                 return val
 
