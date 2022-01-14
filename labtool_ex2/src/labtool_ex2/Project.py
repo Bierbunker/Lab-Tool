@@ -34,7 +34,9 @@ from pathlib import Path
 
 from sympy import Matrix, hessian, lambdify
 
+
 # dont fucking move this line
+
 matplotlib.use("Agg")
 from matplotlib.legend import _get_legend_handles_labels
 import matplotlib.pyplot as plt
