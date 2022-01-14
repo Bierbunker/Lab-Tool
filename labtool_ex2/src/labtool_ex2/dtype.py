@@ -3,15 +3,25 @@ from pandas.core.arrays.base import ExtensionArray
 from uncertainties.core import AffineScalarFunc, Variable
 import numpy as np
 
-from typing import Optional, List, Tuple, Union
+from typing import Optional, List, Tuple, Union, Type
 
 
 class UfloatDtype(Variable, ExtensionDtype):
-    _is_bool = True
-    type = Variable
+    @property
+    def kind(self) -> str:
+        """The kind property."""
+        return "O"
+
+    @property
+    def type(self) -> Type[Variable]:
+        return Variable
 
     @property
     def _is_numeric(self) -> bool:
+        return True
+
+    @property
+    def _is_boolean(self) -> bool:
         return True
 
     @property
