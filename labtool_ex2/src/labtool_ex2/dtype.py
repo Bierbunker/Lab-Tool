@@ -1,37 +1,33 @@
-# standard library
-from __future__ import annotations
-
 # 3rd party
 import numpy as np
 import pandas as pd
-from uncertainties.core import Variable
-from pandas.core.dtypes.base import ExtensionDtype, register_extension_dtype
-from pandas.core.arrays.base import ExtensionArray
-from pandas.api.extensions import register_dataframe_accessor, register_series_accessor
+from pandas.api.extensions import (
+    ExtensionDtype,
+    ExtensionArray,
+    register_extension_dtype,
+    register_series_accessor,
+    register_dataframe_accessor,
+)
+from uncertainties.core import AffineScalarFunc, Variable
+from uncertainties.unumpy import uarray
+
+# own project imports
+from .uarray import UArray
+
 
 
 @register_extension_dtype
 class UfloatDtype(ExtensionDtype):
     """A custom data type, to be paired with an ExtensionArray"""
-     
-    @property
-    def type(self):
-        return Variable
     
-    @property
-    def name(self):
-        return "ufloat"
-
-    @property
-    def _is_numeric(self):
-        return True
-    
-    @property
-    def _is_boolean(self):
-        return True
-    
-    #_metadata = ("nominal_value", "std_dev", "tag")
-    
+    type = Variable  # type: ignore
+    # linter wants a property, but pandas validates the type of name
+    # as a string via assertion, therefore: AssertionError if written
+    # as a property
+    name = "ufloat"  # type: ignore
+    _is_numeric = True
+    _is_boolean = True
+       
     
     @classmethod
     def construct_array_type(cls):
@@ -62,17 +58,9 @@ class UfloatArray(ExtensionArray):
     * _concat_same_type
     """
     
+    def __init__(self, variables, dtype=None, copy=False):
+        self._data = UArray(variables)
 
-    def __init__(self, values, dtype=None, copy=False):
-        uarray = []
-        for value in values:
-            try:
-                uarray.append(Variable(value.nominal_value, value.std_dev, tag=value.tag))
-            except AttributeError:
-                uarray.append(Variable(value, 0))
-                
-        self._data = np.asarray(uarray, dtype=object)
-        
     @classmethod
     def _from_sequence(cls, scalars, dtype=None, copy=False):
         """Construct a new ExtensionArray from a sequence of scalars."""
@@ -122,8 +110,7 @@ class UfloatArray(ExtensionArray):
         if allow_fill and fill_value is None:
             fill_value = self.dtype.na_value
 
-        result = take(
-            data, indexer, fill_value=fill_value, allow_fill=allow_fill)
+        result = take(data, indexer, fill_value=fill_value, allow_fill=allow_fill)
         return self._from_sequence(result)
     
     def copy(self):
@@ -137,24 +124,90 @@ class UfloatArray(ExtensionArray):
 
 
 @register_series_accessor("u")
-class UfloatAccessor:
-    def __init__(self, pandas_object):
-        self._validate(pandas_object)
-        self._obj = pandas_object
-        self._n = pd.Series([x.n for x in pandas_object])
-        self._s = pd.Series([x.s for x in pandas_object])
+class UfloatSeriesAccessor:
+    
+    def __init__(self, series):
+        #self._validate(series)
+        self._obj = series
+        self._asuarray = UArray(series)
         
-    @staticmethod
-    def _validate(obj):
-        try:
-            obj.n; obj.s
-        except AttributeError as e:
-            raise e
+    # @staticmethod
+    # def _validate(obj):
+    #     if obj.dtype != "ufloat":
+    #         raise TypeError("Dtype has to be 'ufloat' in order to use this accessor!")
         
     @property
     def n(self):
-        return self._n
+        return pd.Series(self._asuarray.n, index=self._obj.index, name=self._obj.name)
     
     @property
     def s(self):
-        return self._s
+        return pd.Series(self._asuarray.s, index=self._obj.index, name=self._obj.name)
+    
+    
+@register_dataframe_accessor("u")
+class UfloatDataFrameAccessor:
+    
+    def __init__(self, dataframe):
+        #self._validate(dataframe)
+        self._obj = dataframe
+        self._asuarray = UArray(dataframe)
+        
+    # @staticmethod
+    # def _validate(obj):
+    #     #! TODO
+    #     try:
+    #         UArray(obj)
+    #     except Exception as e:
+    #         raise e
+        
+    @property
+    def n(self):
+        return pd.DataFrame(self._asuarray.n, index=self._obj.index, columns=self._obj.columns)
+    
+    @property
+    def s(self):
+        return pd.DataFrame(self._asuarray.s, index=self._obj.index, columns=self._obj.columns)
+    
+    @property
+    def sep(self):
+        df = pd.DataFrame(data=None, index=self._obj.index)
+        for column_name in self._obj:
+            if isinstance(self._obj[column_name].iloc[0], AffineScalarFunc):
+                series_n = self._obj[column_name].astype("ufloat").u.n
+                series_s = self._obj[column_name].astype("ufloat").u.s
+                # TODO: change 'd' to PREFIX
+                series_s.name = f"d{series_s.name}"
+                df = pd.concat([df, series_n, series_s], axis=1)
+            else:
+                df = pd.concat([df, self._obj[column_name]], axis=1)
+                
+        return df
+                
+
+    @property
+    def com(self):
+        
+        df = pd.DataFrame(data=None, index=self._obj.index)
+        
+        errors = []
+        errored = []
+        for column_name in self._obj:
+            shortened = column_name[1:]
+            # TODO: PREFIX
+            if column_name.startswith("d") and shortened in self._obj.columns:
+                errors.append(column_name)
+                errored.append(shortened)
+            
+        for column_name in self._obj:
+            if column_name in errored:
+                continue
+            elif column_name in errors:
+                shortened = column_name[1:]
+                df = pd.concat([df, pd.Series(uarray(self._obj[shortened], self._obj[column_name]), name=shortened)], axis=1)
+            else:
+                df = pd.concat([df, self._obj[column_name]], axis=1)
+        
+        return df
+            
+        #if not re.match(r"^d(\w)+(\.\d+)?$", column_name):
