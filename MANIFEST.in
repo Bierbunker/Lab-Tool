@@ -1,2 +1,2 @@
-recursive-include labtool_ex2_data *.tex
-recursive-include labtool_ex2_data *.bib
+include README.md
+recursive-include labtool_ex2/src/labtool_ex2/labtool_ex2_data *
