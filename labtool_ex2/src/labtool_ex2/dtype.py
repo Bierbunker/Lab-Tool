@@ -1,9 +1,13 @@
+# std lib
+from sys import getsizeof as sizeof
+
 # 3rd party
 import numpy as np
 import pandas as pd
 from pandas.api.extensions import (
     ExtensionDtype,
     ExtensionArray,
+    take,
     register_extension_dtype,
     register_series_accessor,
     register_dataframe_accessor,
@@ -14,6 +18,12 @@ from uncertainties.unumpy import uarray
 # own project imports
 from .uarray import UArray
 
+
+# temporary solution for global PREFIX
+# could be changed to regex pattern
+PREFIX = "d"
+# Max' regex:
+#if not re.match(r"^d(\w)+(\.\d+)?$", column_name):
 
 
 @register_extension_dtype
@@ -81,7 +91,6 @@ class UfloatArray(ExtensionArray):
     
     @property
     def _itemsize(self):
-        from sys import getsizeof as sizeof
         return sizeof(Variable)
     
     @property
@@ -104,8 +113,6 @@ class UfloatArray(ExtensionArray):
         Relies on the take method defined in pandas:
         https://github.com/pandas-dev/pandas/blob/e246c3b05924ac1fe083565a765ce847fcad3d91/pandas/core/algorithms.py#L1483
         """
-        from pandas.api.extensions import take
-
         data = self._data
         if allow_fill and fill_value is None:
             fill_value = self.dtype.na_value
@@ -155,7 +162,7 @@ class UfloatDataFrameAccessor:
         
     # @staticmethod
     # def _validate(obj):
-    #     #! TODO
+    #     # TODO
     #     try:
     #         UArray(obj)
     #     except Exception as e:
@@ -171,13 +178,16 @@ class UfloatDataFrameAccessor:
     
     @property
     def sep(self):
+        
         df = pd.DataFrame(data=None, index=self._obj.index)
+        
         for column_name in self._obj:
+            # check type of first element of each column
+            # TODO: better approach
             if isinstance(self._obj[column_name].iloc[0], AffineScalarFunc):
                 series_n = self._obj[column_name].astype("ufloat").u.n
                 series_s = self._obj[column_name].astype("ufloat").u.s
-                # TODO: change 'd' to PREFIX
-                series_s.name = f"d{series_s.name}"
+                series_s.name = f"{PREFIX}{series_s.name}"
                 df = pd.concat([df, series_n, series_s], axis=1)
             else:
                 df = pd.concat([df, self._obj[column_name]], axis=1)
@@ -189,26 +199,29 @@ class UfloatDataFrameAccessor:
     def com(self):
         
         df = pd.DataFrame(data=None, index=self._obj.index)
+        columns = self._obj.columns
         
-        errors = []
-        errored = []
-        for column_name in self._obj:
-            shortened = column_name[1:]
-            # TODO: PREFIX
-            if column_name.startswith("d") and shortened in self._obj.columns:
-                errors.append(column_name)
-                errored.append(shortened)
+        # check for duplicates
+        if len(columns) != len(set(columns)):
+            raise AssertionError("DataFrame contains duplicate labels!")
+        
+        values = set()
+        deltas = set()  # values with prefix
+        for column_name in columns:
+            # column name without prefix
+            shortened = column_name[len(PREFIX):]
+            if column_name.startswith(PREFIX) and shortened in columns:
+                deltas.add(column_name)
+                values.add(shortened)
             
-        for column_name in self._obj:
-            if column_name in errored:
+        for column_name in columns:
+            if column_name in values:
+                # skip values, they get handled together with the according deltas
                 continue
-            elif column_name in errors:
-                shortened = column_name[1:]
+            elif column_name in deltas:
+                shortened = column_name[len(PREFIX):]
                 df = pd.concat([df, pd.Series(uarray(self._obj[shortened], self._obj[column_name]), name=shortened)], axis=1)
             else:
                 df = pd.concat([df, self._obj[column_name]], axis=1)
         
         return df
-            
-        #if not re.match(r"^d(\w)+(\.\d+)?$", column_name):
-        

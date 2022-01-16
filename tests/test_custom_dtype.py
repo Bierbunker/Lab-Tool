@@ -9,38 +9,38 @@ import sys
 test_list = list(range(10)) + [4, np.nan]  # type: ignore
 test_uarray = unp.uarray(test_list, [0.2]*len(test_list))
 
-def test1():
+def test01():
     print("\nTest 1\n")
     ufloatarray = UfloatArray(test_list)
     print(ufloatarray)
 
-def test2():
+def test02():
     print("\nTest 2\n")
     series = pd.Series(test_uarray, dtype="ufloat")
     print(series)
     
-def test3():
+def test03():
     print("\nTest 3\n")
     df_uarray = pd.DataFrame({"ufloats": UfloatArray(test_uarray), "ints": range(len(test_uarray)), })
     print([(x.nominal_value, x.std_dev, x.tag) for x in test_uarray])
     print(df_uarray.dtypes)
     print(type(df_uarray["ufloats"]))
     
-def test4():
+def test04():
     print("\nTest 4\n")
     print(type(pd.Series(UfloatArray(test_uarray)).dtype))
     
-def test5():
+def test05():
     print("\nTest 5\n")
     df_uarray = pd.DataFrame({"ufloats": test_uarray, "ints": range(len(test_uarray))})
     print(df_uarray.dtypes)
     
-def test6():
+def test06():
     print("\nTest 6\n")
     series = pd.Series(test_uarray, name="u", dtype="ufloat")
     print(series.u.s)
     
-def test7():
+def test07():
     print("\nTest 7\n")
     ints = range(len(test_uarray))
     df_uarray = pd.DataFrame({"ufloats": test_uarray, "ints": ints, "strings": [chr(num**2) for num in ints]})
@@ -50,7 +50,7 @@ def test7():
     print(f"dtypes\n{df_uarray.dtypes}\n")
     print(f"dtypes n\n{df_uarray.u.n.dtypes}\n")
     
-def test8():
+def test08():
     print("\nTest 8\n")
     ints = range(len(test_uarray))
     df_uarray = pd.DataFrame({"ufloats": test_uarray, "ints": ints, "strings": [chr(num**2) for num in ints]})
@@ -60,7 +60,7 @@ def test8():
     print(type(df_4.iloc[0,0]))
     
     
-def test9():
+def test09():
     print("\nTest 9\n")
     ints = range(len(test_uarray))
     df_uarray = pd.DataFrame({"ufloats": test_uarray, "ints": ints, "strings": [chr(num**2) for num in ints]})
@@ -80,12 +80,20 @@ def test10():
     print(df.u.com.u.sep)
     print(df.astype("float"))
     
+def test11():
+    print("\nTest 10\n")
+    df = pd.read_csv("test_csv.csv")
+    df = pd.concat([df, df["P1"]], axis=1)
+    print(df)
+    print(df.u.com)
+    
 
 # UArray.n /.s (sub-class from np.ndarray)
 # pd.Series.u.n /.s
 # pd.DataFrame.u.n /.s
 
-test10()
 
-# for _, func in inspect.getmembers(sys.modules['__main__'], inspect.isfunction):
-#    func()
+RUN_ALL = True
+if RUN_ALL:
+    for _, func in inspect.getmembers(sys.modules['__main__'], inspect.isfunction):
+       func()
