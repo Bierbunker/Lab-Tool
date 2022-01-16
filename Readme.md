@@ -1,5 +1,9 @@
 # Lab-Tool - A Python based lab-data visualization tool
 
+![](https://img.shields.io/github/v/release/Bierbunker/Lab-Tool?include_prereleases)
+![](https://img.shields.io/pypi/l/labtool-ex2)
+![](https://github.com/Bierbunker/Lab-Tool/actions/workflows/pypi.yml/badge.svg)
+
 Lab-Tool is a python package that can be used to process and visualize data
 obtained primarily from physical experiments.
 
