@@ -204,6 +204,8 @@ class UfloatDataFrameAccessor:
         # check for duplicates
         if len(columns) != len(set(columns)):
             raise AssertionError("DataFrame contains duplicate labels!")
+        # other approach:
+        # https://pandas.pydata.org/pandas-docs/stable/user_guide/duplicates.html
         
         values = set()
         deltas = set()  # values with prefix
