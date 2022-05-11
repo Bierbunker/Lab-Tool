@@ -10,7 +10,9 @@ import pandas
 import math
 import re
 import io
+import sys
 import sympy as simp
+import inspect
 from collections.abc import Iterable
 from sympy.utilities.iterables import ordered
 import matplotlib
@@ -52,11 +54,14 @@ printing.init_printing(use_latex=True)
 
 
 class Project:
-    def __init__(self, name, global_variables=dict(), global_mapping=dict(), font=10):
+    def __init__(
+        self, name, global_variables=dict(), global_mapping=dict(), font=10, infer=True
+    ):
         self.name = name
         # self.equations = dict()
         self.gm = global_mapping
         self.gv = global_variables
+        self._infer = infer
         self.figure = plt.figure()
         # self.data_path = list() glob internal PATH variable
         # BEGIN these are currently not used but maybe in the future
@@ -80,6 +85,26 @@ class Project:
 
         p = Path(f"./Output/{name}/")
         p.mkdir(parents=True, exist_ok=True)
+        # inject variables into global namespace can be improved if necessary however sympy does the same thing
+        simp.var(list(global_variables))
+
+    # import sys
+    # import ctypes
+
+    # def hack():
+    #     # Get the frame object of the caller
+    #     frame = sys._getframe(1)
+    #     frame.f_locals['x'] = "hack!"
+    #     # Force an update of locals array from locals dict
+    #     ctypes.pythonapi.PyFrame_LocalsToFast(ctypes.py_object(frame),
+    #                                           ctypes.c_int(0))
+
+    # def func():
+    #     x = 1
+    #     hack()
+    #     print(x)
+
+    # func()
 
     def __str__(self):
         return f"""This is the {self.name} Project \n
@@ -285,7 +310,6 @@ class Project:
         :returns: TODO
 
         """
-        print(df.columns)
         colnames = list()
         for colname in df.columns:
             if colname[0] == "d" and colname[1:] in self.gm:
@@ -314,9 +338,8 @@ class Project:
             with open(f"./Output/{self.name}/messreihe_{df.name}.tex", "w") as tf:
                 tf.write(df.to_latex(escape=False))
 
-    def print_ftable(self, df, name=None, format="standard", split=False, is_udf=True):
-        # andi vorschlag Table(Dataframe) object erstellen welches eine flag hat um zu sehen ob es aus uarrays besteht
-        # if df.ucoll
+    def print_ftable(self, df, name=None, format="standard", split=False):
+        df = df.u.com
         numColumns = df.shape[1]
         numRows = df.shape[0]
         output = io.StringIO()
@@ -326,23 +349,24 @@ class Project:
             if colname[0] == "d" and colname[1:] in self.gm:
                 unit = " / " + self.gv[colname[1:]]
                 colname = self.gm[colname[1:]]
-                colnames.append(r"$\Delta " + colname + "$" + unit)
+                colnames.append(r"{{{$\Delta " + colname + "$" + unit+ "}}}")
                 continue
             if colname in self.gm:
                 unit = " / " + self.gv[colname]
                 colname = self.gm[colname]
-                colnames.append("$" + colname + "$" + unit)
+                colnames.append("{{{$" + colname + "$" + unit + "}}}")
                 continue
             if "d" in colname and "\\" not in colname:
                 colname = colname.replace("d", "\\Delta ")
             if len(colname) > 1 and "\\" not in colname:
                 colname = "\\" + colname
 
-            colnames.append("$" + colname + "$")
+            colnames.append("{{{$" + colname + "$}}}")
             if split:
-                colnames.append("$\\Delta " + colname + "$")
+                colnames.append("{{{$\\Delta " + colname + "$}}}")
 
-        output.write("\\begin{tblr}\n")
+        esses = "S" * numColumns
+        output.write("\\begin{tblr}{" + esses + "}\n")
         if split:
 
             def format_value(x):
@@ -358,7 +382,6 @@ class Project:
                     )
                 else:
                     val = fmt_x.replace("+/-", " & ")
-                print(val)
                 return val
 
             # colFormat = "%s|%s" % (alignment, alignment * numColumns)
@@ -396,153 +419,6 @@ class Project:
             with open(f"./Output/{self.name}/messreihe_{df.name}.tex", "w") as tf:
                 tf.write(output.getvalue())
         # return output.getvalue()
-
-    def write_table(
-        self,
-        content: DataFrameLike,
-        path: str,
-        environ: str = "tblr",
-        colspec: Union[str, list[str]] = "",
-        inner_settings: list[str] = [],
-        columns: Union[bool, list[str]] = False,
-        index: bool = False,
-        format_spec: Union[None, str] = None,
-        uarray: bool = False,
-        sisetup: list[str] = [],
-        hlines_old: bool = False,
-        msg: bool = False,
-    ) -> str:
-        """
-        Copied from Andreas Zach ;) aber an die Project Klasse angepasst
-        Create a tex-file with a correctly formatted table for LaTeX-package 'tabularray' from the given
-        input content. Return the created string.
-        Mandatory parameters:
-        -> content\t\t\tmust be convertible to pandas.DataFrame
-        -> path\t\t\tname (or relative path) to tex-file for writing the table to, can be left empty
-        \t\t\t\tin order to just return the string
-        Optional parameters:
-        -> environ='tblr'\t\ttblr environment specified in file 'tabularray-environments.tex',
-        \t\t\t\toptional 'tabular' to use a standard LaTeX-table
-        -> colspec=''\t\tcolumn specifier known from standard LaTeX tables (only suited for tabularray!),
-        \t\t\t\tone string or list of strings
-        -> inner_settings=[]\tadditional settings for the tabularray environment (see documentation), input as list of strings
-        \t\t\t\tif standard 'tabular' environment is used, the column specifiers can be put here as one entry of the list
-        -> columns=False\t\twrite table header (first row), input as list of strings or boolean
-        -> index=False\t\tboolean if indices of rows (first column) should be written to table
-        -> format_spec=None\t\tfloat formatter (e.g. .3f) or None if floats should not be formatted specifically
-        -> uarray=False\t\tboolean if input was created with uncertainties.unumpy.uarray
-        -> sisetup=[]\t\tlist with options for \\sisetup before tblr gets typeset
-        -> hlines_old=False\t\tif standard tabular environment is used, this can be set to True to draw all hlines
-        -> msg=False\t\tboolean if the reformatted DataFrame and the created string should be printed to the console
-        """
-        # input must be convertible to pandas.DataFrame
-        df = pandas.DataFrame(content)
-
-        # format_specifier
-        formatter = f"{{:{format_spec}}}".format if format_spec is not None else None
-
-        # append column specifier to inner settings
-        if colspec:
-            if isinstance(colspec, list):
-                colspec = "".join(colspec)
-
-            inner_settings.append(f"colspec={{{colspec}}}")
-            # double curly braces produce literal curly brace in f string
-            # three braces: evaluation surrounded by single braces
-
-        # prepare columns for siunitx S columns
-        # columns could be bool or Iterable[str]
-
-        # check if columns has any truthy value
-        if columns:
-
-            # identity check with 'is' because columns could be a non-empty container
-            # alternative: isinstance(columns, bool)
-            if columns is True:
-                columns = df.columns.tolist()
-
-            # non-empty container
-            else:
-                # check if right amount of column labels was provided
-                if len(columns) != len(df.columns):
-                    raise IndexError(
-                        "'content' had a different amount of columns than provided 'columns'"
-                    )
-                else:
-                    # update columns of DataFrame
-                    df.columns = columns  # type: ignore
-
-            # if columns was True, it's now a list
-            # else it's still the provided Iterable with correct length
-            # make strings safe for tabularry's siunitx S columns
-            colnames = list()
-            for colname in columns:
-                if colname in self.gm:
-                    colname = self.gm[colname]
-                    colnames.append(colname)
-                    continue
-                if "d" in colname and "\\" not in colname:
-                    colname = colname.replace("d", "\\Delta ")
-                if len(colname) > 1 and "\\" not in colname:
-                    colname = "\\" + colname
-
-                colname = "$" + colname + "$"
-                colnames.append(colname)
-            columns = colnames
-            columns = [f"{{{{{{{col}}}}}}}" for col in columns]  # type: ignore
-
-        # if falsy value, it should be False altogether
-        else:
-            columns = False
-
-        # strings
-        sisetup_str = ", ".join(sisetup)
-        inner_settings_str = ",\n".join(inner_settings)
-        hlines_str = "\\hline" if hlines_old else ""
-        df_str: str = df.to_csv(
-            sep="&",
-            line_terminator=f"\\\\{hlines_str}\n",  # to_csv without path returns string
-            float_format=formatter,
-            header=columns,
-            index=index,
-        )  # type: ignore
-
-        if uarray:
-            # delete string quotes
-            df_str = df_str.replace('"', "")
-
-            # replace +/- with +-
-            df_str = re.sub(r"(\d)\+/-(\d)", r"\1 +- \2", df_str)
-
-            # delete parantheses and make extra spaces if exponents
-            df_str = re.sub(r"\((\d+\.?\d*) \+- (\d+\.?\d*)\)e", r"\1 +- \2 e", df_str)
-
-        # create complete string
-        complete_str = f"\\sisetup{{{sisetup_str}}}\n\n" if sisetup_str else ""
-        complete_str += (
-            f"\\begin{{{environ}}}{{{inner_settings_str}}}{hlines_str}\n"
-            f"{df_str}"
-            f"\\end{{{environ}}}"
-        )
-
-        # write to file if path provided
-        if path:
-            # open() does not encode in utf-8 by default
-            with open(path, "w", encoding="utf-8") as f:
-                f.write(complete_str)
-
-        # message printing
-        if msg:
-            # pd.options
-            options.display.float_format = formatter
-
-            print(
-                f"Wrote pandas.DataFrame\n\n{df}\n\n"
-                f"as tabularray environment '{environ}' to file '{path}'\n\n\n"
-                f"output:\n\n{complete_str}"
-            )
-
-        return complete_str
 
     def figure_legend(self, **kwargs):
         """
@@ -693,8 +569,39 @@ class Project:
         """Converts a Sympy Expression to a numpy calculable function"""
         return simp.lambdify(tuple(expr.free_symbols), expr, "numpy")
 
-    def apply_df(self, expr):
+    def apply_df(self, expr, infer=None, name=None, errors=None):
         """Uses expr and internal data to calculate the value described by expr"""
+
+        # def varnameis(v):
+        #     d = globals()
+        #     return [k for k in d if d[k] == v]
+
+        # def varname(v, scope=None):
+        #     d = globals() if not scope else vars(scope)
+        #     return [k for k in d if d[k] == v]
+
+        if infer is None:
+            infer = self._infer
+
+        params = list()
+        if infer:
+            # nice hack which finds the name of the parameters which called this function
+            func_name = sys._getframe().f_code.co_name
+            line_of_code = inspect.stack()[1][4][0]
+            reg = func_name + r"\((?P<params>.+)\)"
+            match = re.search(reg, line_of_code)
+            params = match.group("params").split(",")
+
+        if name is not None:
+            params[0] = name
+        # print(newvar.split("(")[1].split(")")[0])
+        # frame = inspect.stack()[1][0]
+        # while name not in frame.f_locals:
+        # frame = frame.f_back
+        # if frame is None:
+        # return None
+        # return frame.f_locals[name]
+        # print(varnameis(expr))
         function_data = dict()
         if hasattr(expr, "lhs"):
             for var in expr.free_symbols:
@@ -702,12 +609,18 @@ class Project:
                 if var is not expr.lhs:
                     series = self.data[var]
                     function_data[var] = series.to_numpy()
-            return self._expr_to_np(expr)(**function_data)
         else:
             for var in expr.free_symbols:
                 var = str(var)
                 series = self.data[var]
                 function_data[var] = series.to_numpy()
+
+        if params:
+            self.data[params[0]] = self._expr_to_np(expr)(**function_data)
+            # TODO Add or reset definition of variable using f_locals no like sympy does
+            simp.var(params[0])
+            return self.data[params[0]]
+        else:
             return self._expr_to_np(expr)(**function_data)
 
     def apply_df_err(self, expr):
