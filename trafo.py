@@ -57,7 +57,7 @@ if __name__ == "__main__":
 
     # Versuch 1
     P.load_data("./Data/Trafo/versuch1.csv")
-    print(P.data)
+    # print(P.data)
     P.print_table(
         P.data[["P1", "dP1", "U", "dU", "U1", "dU1", "I1", "dI1", "U2", "dU2"]],
         name="messwertversuch1",
@@ -65,7 +65,7 @@ if __name__ == "__main__":
     S = U1 * I1
     P.data["S"] = P.apply_df(S)
     P.data["dS"] = P.apply_df_err(S)
-    Q1 = (S ** 2 - P1 ** 2) ** 0.5
+    Q1 = (S**2 - P1**2) ** 0.5
     P.data["Q1"] = P.apply_df(Q1)
     P.data["dQ1"] = P.apply_df_err(Q1)
     l = P1 / S
@@ -88,7 +88,7 @@ if __name__ == "__main__":
     # Versuch 2
     simp.var(list(gv))
     P.load_data("./Data/Trafo/versuch2.csv", loadnew=True)
-    print(P.data)
+    # print(P.data)
     P.print_table(
         P.data[
             [
@@ -109,9 +109,13 @@ if __name__ == "__main__":
     S = U1 * I1
     P.data["S"] = P.apply_df(S)
     P.data["dS"] = P.apply_df_err(S)
-    Q1 = (S ** 2 - P1 ** 2) ** 0.5
+    Q1 = (S**2 - P1**2) ** 0.5
+    P.data = P.data.u.com
+    print(P.data.dtypes)
+    print(P.data)
     P.data["Q1"] = P.apply_df(Q1)
-    P.data["dQ1"] = P.apply_df_err(Q1)
+    P.data = P.data.u.sep
+    # P.data["dQ1"] = P.apply_df_err(Q1)
     l = P1 / S
     P.data["l"] = P.apply_df(l)
     P.data["dl"] = P.apply_df_err(l)
@@ -174,7 +178,7 @@ if __name__ == "__main__":
     S = U1 * I1
     P.data["S"] = P.apply_df(S)
     P.data["dS"] = P.apply_df_err(S)
-    Q1 = (S ** 2 - P1 ** 2) ** 0.5
+    Q1 = (S**2 - P1**2) ** 0.5
     P.data["Q1"] = P.apply_df(Q1)
     P.data["dQ1"] = P.apply_df_err(Q1)
     l = P1 / S
@@ -189,7 +193,7 @@ if __name__ == "__main__":
     n = PR / P1 * 100
     P.data["n"] = P.apply_df(n)
     P.data["dn"] = P.apply_df_err(n)
-    P.print_table(
+    P.print_ftable(
         P.data[
             [
                 "S",
@@ -207,6 +211,7 @@ if __name__ == "__main__":
             ]
         ],
         name="wertversuch3_extra",
+        split=True,
     )
     P.plot_data(
         ax,
@@ -225,10 +230,10 @@ if __name__ == "__main__":
     #     errors=True,
     # )
     simp.var(list(gv))
-    print(P.data)
-    PR = U2 ** 2 * R / (R ** 2 + (XL) ** 2)
+    # print(P.data)
+    PR = U2**2 * R / (R**2 + (XL) ** 2)
     P.print_expr(PR)
-    theoPR = U2 ** 2 * R / (R ** 2 + xl ** 2)
+    theoPR = U2**2 * R / (R**2 + xl**2)
     P.data["theoPR"] = P.apply_df(theoPR)
     P.data["dtheoPR"] = P.apply_df_err(theoPR)
     P.plot_function(
@@ -259,14 +264,14 @@ if __name__ == "__main__":
         granularity=10000,
     )
     test = ufloat(68, 1.4)
-    df = pd.DataFrame(
-        {"x": [ufloat(11, 1) * 1e8, ufloat(11, 1)], "y": [ufloat(11, 1), ufloat(11, 1)]}
-    )
-    print(df)
+    # df = pd.DataFrame(
+    #     {"x": [ufloat(11, 1) * 1e8, ufloat(11, 1)], "y": [ufloat(11, 1), ufloat(11, 1)]}
+    # )
+    # print(df)
     # arr = unumpy.uarray([1, 2], [0.01, 0.002])
-    P.print_ftable(df, name="test", split=True)
+    # P.print_ftable(df, name="test", split=True)
 
-    print(test.__format__("").split(r"+/-"))
+    # print(test.__format__("").split(r"+/-"))
 
     ax.set_title(f"Leistungskurve am Lastwiderstand")
     P.ax_legend_all(loc=1)
