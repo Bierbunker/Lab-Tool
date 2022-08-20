@@ -30,9 +30,10 @@ from uncertainties import nominal_value
 from uncertainties import std_dev
 from uncertainties.core import format_num
 from numpy.typing import ArrayLike
+from .helpers import round_up
 
 from pathlib import Path
-
+from .LatexPrinter import latex
 
 from sympy import Matrix, hessian, lambdify
 
@@ -43,7 +44,6 @@ matplotlib.use("Agg")
 from matplotlib.legend import _get_legend_handles_labels
 import matplotlib.pyplot as plt
 
-from .LatexPrinter import latex
 
 # from math import floor
 # from math import sqrt
@@ -349,7 +349,7 @@ class Project:
             if colname[0] == "d" and colname[1:] in self.gm:
                 unit = " / " + self.gv[colname[1:]]
                 colname = self.gm[colname[1:]]
-                colnames.append(r"{{{$\Delta " + colname + "$" + unit+ "}}}")
+                colnames.append(r"{{{$\Delta " + colname + "$" + unit + "}}}")
                 continue
             if colname in self.gm:
                 unit = " / " + self.gv[colname]
@@ -677,7 +677,7 @@ class Project:
 
     def rms_wave(self, x, y):
         """Calculates the RMS value of x and y data"""
-        I1 = integrate.simpson(y ** 2, x)
+        I1 = integrate.simpson(y**2, x)
         rms = np.sqrt(I1 / (max(x) - min(x)))
         return rms
 
@@ -705,7 +705,7 @@ class Project:
             b_sum = b_sum + voltage * np.sin(w * time)
         a = a_sum * 2 / len(t)
         b = b_sum * 2 / len(t)
-        mag = np.sqrt(a ** 2 + b ** 2)
+        mag = np.sqrt(a**2 + b**2)
         phase = np.arctan2(a, b)
         print(mag)
         print(phase)
