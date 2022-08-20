@@ -1,0 +1,9 @@
+    pandas
+    numpy
+    matplotlib
+    uncertainties
+    sympy
+    lmfit
+    uncertainties
+    numdifftools
+    scikit-learn
