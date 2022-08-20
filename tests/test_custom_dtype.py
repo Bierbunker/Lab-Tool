@@ -1,10 +1,7 @@
-import labtool_ex2
 from labtool_ex2.dtype import UfloatArray
 import pandas as pd
 import numpy as np
 import uncertainties.unumpy as unp
-import inspect
-import sys
 
 test_list = list(range(10)) + [4, np.nan]  # type: ignore
 test_uarray = unp.uarray(test_list, [0.2] * len(test_list))
