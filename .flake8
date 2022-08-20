@@ -1,3 +1,4 @@
 per-file-ignores =
     trafo.py:F821
     test.py:F821,E402
+    oszi.py:F821,E741
