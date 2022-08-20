@@ -1,5 +1,3 @@
 [flake8]
 per-file-ignores =
-    trafo.py:F821,E741
-    test.py:F821,E402
-    oszi.py:F821,E741
+    ./examples/*:F821,E741,E402
