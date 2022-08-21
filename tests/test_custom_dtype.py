@@ -99,7 +99,7 @@ def test9():
 
 def test10():
     print("\nTest 10\n")
-    df = pd.read_csv("test_csv.csv")
+    df = pd.read_csv("./test_csv.csv")
     print(df)
     print(df.u.n)
     print(df.u.s)
