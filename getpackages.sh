@@ -11,4 +11,4 @@ pip install -e .
 # pip3 install uncertainties
 echo -e "Running the Skript... \n"
 #run the script
-python3 src/main.py
+# python3 src/main.py
