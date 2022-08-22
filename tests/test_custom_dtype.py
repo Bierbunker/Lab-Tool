@@ -2,6 +2,7 @@ from labtool_ex2.dtype import UfloatArray
 import pandas as pd
 import numpy as np
 import uncertainties.unumpy as unp
+import os
 
 test_list = list(range(10)) + [4, np.nan]  # type: ignore
 test_uarray = unp.uarray(test_list, [0.2] * len(test_list))
@@ -99,8 +100,8 @@ def test9():
 
 def test10():
     print("\nTest 10\n")
-    path = os.path.join(__file__, "test_csv.csv")
-    df = pd.read_csv(path)
+    path = os.path.join(os.path.dirname(__file__), "test_csv.csv")
+    df = pd.read_csv(str(path))
     print(df)
     print(df.u.n)
     print(df.u.s)
