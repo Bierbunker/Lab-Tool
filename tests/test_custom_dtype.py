@@ -1,4 +1,5 @@
 from labtool_ex2.dtype import UfloatArray
+from labtool_ex2.dtype import UfloatDtype
 import pandas as pd
 import numpy as np
 import uncertainties.unumpy as unp
@@ -8,19 +9,21 @@ test_list = list(range(10)) + [4, np.nan]  # type: ignore
 test_uarray = unp.uarray(test_list, [0.2] * len(test_list))
 
 
-def test1():
+def test_1():
     print("\nTest 1\n")
-    ufloatarray = UfloatArray(test_list)
+    ufloatarray = UfloatArray(test_list)  # type: ignore
     print(ufloatarray)
 
 
-def test2():
+def test_2():
     print("\nTest 2\n")
     series = pd.Series(test_uarray, dtype="ufloat")
     print(series)
+    print(series.dtype)
+    print(type(series[0]))
 
 
-def test3():
+def test_3():
     print("\nTest 3\n")
     df_uarray = pd.DataFrame(
         {
@@ -33,24 +36,28 @@ def test3():
     print(type(df_uarray["ufloats"]))
 
 
-def test4():
+def test_4():
     print("\nTest 4\n")
-    print(type(pd.Series(UfloatArray(test_uarray)).dtype))
+    assert isinstance(pd.Series(UfloatArray(test_uarray)).dtype, UfloatDtype)
+    assert (
+        str(type(pd.Series(UfloatArray(test_uarray)).dtype))
+        == "<class 'labtool_ex2.dtype.UfloatDtype'>"
+    )
 
 
-def test5():
+def test_5():
     print("\nTest 5\n")
     df_uarray = pd.DataFrame({"ufloats": test_uarray, "ints": range(len(test_uarray))})
     print(df_uarray.dtypes)
 
 
-def test6():
+def test_6():
     print("\nTest 6\n")
     series = pd.Series(test_uarray, name="u", dtype="ufloat")
     print(series.u.s)
 
 
-def test7():
+def test_7():
     print("\nTest 7\n")
     ints = range(len(test_uarray))
     df_uarray = pd.DataFrame(
@@ -67,7 +74,7 @@ def test7():
     print(f"dtypes n\n{df_uarray.u.n.dtypes}\n")
 
 
-def test8():
+def test_8():
     print("\nTest 8\n")
     ints = range(len(test_uarray))
     df_uarray = pd.DataFrame(
@@ -83,7 +90,7 @@ def test8():
     print(type(df_4.iloc[0, 0]))
 
 
-def test9():
+def test_9():
     print("\nTest 9\n")
     ints = range(len(test_uarray))
     df_uarray = pd.DataFrame(
@@ -98,25 +105,93 @@ def test9():
     print(f"\nfor comparison:\n{df_uarray}")
 
 
-def test10():
+def test_10():
     print("\nTest 10\n")
-    path = os.path.join(os.path.dirname(__file__), "test_csv.csv")
+    path = os.path.join(os.path.dirname(__file__), "data/input/test_csv.csv")
     df = pd.read_csv(str(path))
-    print(df)
-    print(df.u.n)
-    print(df.u.s)
-    print(df.u.com)
-    print(df.u.com.u.n)
-    print(df.u.com.u.s)
-    print(df.u.com.u.sep)
-    print(df.astype("float"))
+    # print(df.u.n)  # type: ignore
+    assert all(df[["P1", "U", "U1", "I1", "U2", "I2", "Ur", "xl"]] == df.u.com.u.n)  # type: ignore
+    assert all(
+        df[["dP1", "dU", "dU1", "dI1", "dU2", "dI2", "dUr", "dxl"]].rename(  # type: ignore
+            lambda name: name[1:], axis="columns"
+        )
+        == df.u.com.u.s  # type: ignore
+    )
+    # assert all(df[["P1", "U", "U1", "I1", "U2", "I2", "Ur", "xl"]] != df.u.n)
+    assert all((df.u.s == 0).all())  # type: ignore
+    # print(df.u.com)  # type: ignorefrom pathlib import Path
+    # path = os.path.join(os.path.dirname(__file__), "data/input/test_csv.csv")
+    filepath = os.path.join(os.path.dirname(__file__), "./data/output/df.u.com.csv")
+    # filepath.parent.mkdir(parents=True, exist_ok=True)
+    # temp = pd.read_csv(filepath).astype("ufloat")  # type: ignore
+    temp = pd.read_csv(filepath).astype(UfloatDtype())  # type: ignore
+    print(temp)
+    print(temp.dtypes)
+    # print(pd.to_numeric(temp.P1))
+    print(temp.convert_dtypes())
+    temp["y"] = temp.P1 + temp.U
+    print(temp.y)
+    print(type(temp.y[0]))
+    print(type(temp.iloc[0, 0]))
+    assert all(df.u.com == pd.read_csv(filepath).astype("ufloat"))  # type: ignore
+    filepath = os.path.join(os.path.dirname(__file__), "./data/output/df.u.com.u.n.csv")
+    # filepath.parent.mkdir(parents=True, exist_ok=True)
+    # df.u.com.u.n.read_csv(filepath)
+    assert all(df.u.com.u.n == pd.read_csv(filepath))  # type: ignore
+    filepath = os.path.join(os.path.dirname(__file__), "./data/output/df.u.com.u.s.csv")
+    # filepath.parent.mkdir(parents=True, exist_ok=True)
+    # df.u.com.u.s.to_csv(filepath)
+    assert all(df.u.com.u.s == pd.read_csv(filepath))  # type: ignore
+    filepath = os.path.join(
+        os.path.dirname(__file__), "./data/output/df.u.com.u.sep.csv"
+    )
+    assert all(df.u.com.u.sep == pd.read_csv(filepath))  # type: ignore
+    # filepath.parent.mkdir(parents=True, exist_ok=True)
+    # df.u.com.u.sep.to_csv(filepath)
+    # print(df.u.com.u.n)  # type: ignore
+    # print(df.u.com.u.s)  # type: ignore
+    # print(df.u.com.u.sep)  # type: ignore
+    # test if it is idempotent
+    assert (
+        len(df.u.com.u.sep.columns) == len(df.columns)  # type: ignore
+        and len(df.u.com.u.sep.columns) == 2 * len(df.u.com.columns)  # type: ignore
+        and len(df.columns) == 2 * len(df.u.com.columns)  # type: ignore
+    )
+    # print(df.astype("float"))  # type: ignore
+
+
+def test_11():
+    print("\nTest 11\n")
+    path = os.path.join(os.path.dirname(__file__), "data/input/test_csv.csv")
+    df = pd.read_csv(str(path))
+    df = df.u.com  # type: ignore
+    df = df.astype("ufloat")
+    assert all(isinstance(dtype, UfloatDtype) for dtype in df.dtypes)
+    assert all("float64" == dtype for dtype in df.u.sep.dtypes)
+    assert all(isinstance(dtype, UfloatDtype) for dtype in df.u.sep.u.com.dtypes)
+
+
+def test_12():
+    print("\nTest 12\n")
+    path = os.path.join(os.path.dirname(__file__), "data/input/test_csv.csv")
+    df = pd.read_csv(str(path))
+    assert all(df == df.u.com.u.sep)  # type: ignore
+
+
+def test_13():
+    print("\nTest 13\n")
+    path = os.path.join(os.path.dirname(__file__), "data/input/test_csv.csv")
+    df = pd.read_csv(str(path))
+    df = df.u.com  # type: ignore
+    y = df.P1 + df.U.astype("ufloat")
+    print(type(y[0]))
+    print(y)
 
 
 # UArray.n /.s (sub-class from np.ndarray)
 # pd.Series.u.n /.s
 # pd.DataFrame.u.n /.s
 
-test10()
 
 # for _, func in inspect.getmembers(sys.modules['__main__'], inspect.isfunction):
 #    func()
