@@ -1,4 +1,3 @@
-# 3rd party
 import numpy as np
 import pandas as pd
 from uncertainties import unumpy
@@ -11,10 +10,10 @@ from pandas.api.extensions import (
 )
 from pandas._typing import (
     DtypeObj,
+    Dtype,
+    PositionalIndexer,
 )
-from typing import (
-    TypeVar,
-)
+from typing import TypeVar, Any
 from pandas.core.arrays.base import ExtensionOpsMixin
 from uncertainties import ufloat
 from uncertainties.core import AffineScalarFunc, Variable
@@ -22,7 +21,7 @@ from uncertainties.unumpy import uarray
 from uncertainties import ufloat_fromstr
 
 from collections.abc import Iterable
-from pandas.api.types import is_integer, is_list_like, is_object_dtype, is_string_dtype
+from pandas.api.types import is_integer, is_list_like
 from pandas.core.indexers import check_array_indexer
 
 # own project imports
@@ -145,7 +144,7 @@ class UfloatArray(ExtensionArray, ExtensionOpsMixin):
     * _concat_same_type
     """
 
-    def __init__(self, variables, dtype=None, copy=False):
+    def __init__(self, variables, dtype: Dtype | None = None, copy: bool = False):
         # if (
         #     (isinstance(variables, list) or isinstance(variables, np.ndarray))
         #     and len(variables) == 1
@@ -157,7 +156,7 @@ class UfloatArray(ExtensionArray, ExtensionOpsMixin):
         self._dtype = UfloatDtype()
 
     @property
-    def dtype(self):
+    def dtype(self) -> UfloatDtype:
         """An instance of 'UfloatDtype'."""
         return self._dtype
 
@@ -166,7 +165,7 @@ class UfloatArray(ExtensionArray, ExtensionOpsMixin):
         return len(self._data)
 
     @classmethod
-    def _from_sequence(cls, scalars, dtype=None, copy=False):
+    def _from_sequence(cls, scalars, dtype: Dtype | None = None, copy: bool = False):
         """Construct a new ExtensionArray from a sequence of scalars."""
         scalars = UArray(scalars)
         # print(f"hello {scalars}")
@@ -175,11 +174,35 @@ class UfloatArray(ExtensionArray, ExtensionOpsMixin):
         return cls(scalars, dtype=dtype, copy=copy)
 
     @classmethod
-    def _from_factorized(cls, values, original):
+    def _from_sequence_of_strings(
+        cls, strings, *, dtype: Dtype | None = None, copy=False, **kwargs
+    ):
+        """
+        Construct a new ExtensionArray from a sequence of strings.
+
+        Parameters
+        ----------
+        strings : Sequence
+            Each element will be an instance of the scalar type for this
+            array, ``cls.dtype.type``.
+        dtype : dtype, optional
+            Construct for this particular dtype. This should be a Dtype
+            compatible with the ExtensionArray.
+        copy : bool, default False
+            If True, copy the underlying data.
+
+        Returns
+        -------
+        ExtensionArray
+        """
+        return cls._from_sequence(strings, dtype=dtype, copy=copy)
+
+    @classmethod
+    def _from_factorized(cls, values: Iterable, original):
         """Reconstruct an ExtensionArray after factorization."""
         return cls(values, dtype=original.dtype)
 
-    def astype(self, dtype, copy=True):
+    def astype(self, dtype: Dtype | str | AffineScalarFunc, copy: bool = True):
         """Cast to a NumPy array with 'dtype'.
         Parameters
         ----------
@@ -211,7 +234,7 @@ class UfloatArray(ExtensionArray, ExtensionOpsMixin):
         return UArray(self._data)
         # return np.array(self, dtype=dtype, copy=copy)
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: PositionalIndexer) -> UfloatArrayT | Any:
         """Select a subset of self."""
         # return self._data[item]
         if is_integer(item):
@@ -242,14 +265,14 @@ class UfloatArray(ExtensionArray, ExtensionOpsMixin):
 
         self._data[key] = value
 
-    def round(self, decimals=0, *args, **kwargs):
+    def round(self, decimals: int = 0, *args, **kwargs):
         """
         Used by round.
         """
         return type(self)(np.around(self._data, decimals), self._dtype)
 
     @property
-    def _itemsize(self):
+    def _itemsize(self) -> int:
         from sys import getsizeof as sizeof
 
         return sizeof(Variable)
@@ -274,7 +297,7 @@ class UfloatArray(ExtensionArray, ExtensionOpsMixin):
         return self._data == other._data
 
     @property
-    def nbytes(self):
+    def nbytes(self) -> int:
         """The byte size of the data."""
         return self._itemsize * len(self)
 
@@ -282,7 +305,7 @@ class UfloatArray(ExtensionArray, ExtensionOpsMixin):
         """A 1-D array indicating if each value is missing."""
         return unumpy.isnan(self._data)  # type: ignore
 
-    def take(self, indexer, allow_fill=False, fill_value=None):
+    def take(self, indexer, allow_fill: bool = False, fill_value: Any = None):
         """Take elements from an array.
 
         Relies on the take method defined in pandas:
@@ -367,14 +390,14 @@ class UfloatArray(ExtensionArray, ExtensionOpsMixin):
 
         return functions[name](quantity)
 
-    def _formatter(self, boxed=False):
+    def _formatter(self, boxed: bool = False):
         def formatting_function(uflt):
             return "{}".format(uflt)
 
         return formatting_function
 
     @classmethod
-    def _create_method(cls, op, coerce_to_dtype=True):
+    def _create_method(cls, op, coerce_to_dtype: bool = True):
         """
         A class method that returns a method that will correspond to an
         operator for an ExtensionArray subclass, by dispatching to the
@@ -419,7 +442,7 @@ class UfloatArray(ExtensionArray, ExtensionOpsMixin):
                 elif isinstance(param, AffineScalarFunc):
                     return param
                 elif is_list_like(param) and isinstance(param[0], AffineScalarFunc):
-                    return type(param[0])([p.value for p in param])
+                    return param
                 else:
                     return param
 
@@ -437,6 +460,8 @@ class UfloatArray(ExtensionArray, ExtensionOpsMixin):
             #     rvalues = rvalues[0]
             # If the operator is not defined for the underlying objects,
             # a TypeError should be raised
+            # print(f"{lvalues =}")
+            # print(f"{rvalues =}")
             res = op(lvalues, rvalues)
 
             # if op.__name__ == "divmod":
@@ -527,6 +552,10 @@ class UfloatArray(ExtensionArray, ExtensionOpsMixin):
         return np.array(self._data, dtype=dtype, copy=copy)
 
 
+UfloatArray._add_arithmetic_ops()
+UfloatArray._add_comparison_ops()
+
+
 @register_series_accessor("u")
 class UfloatSeriesAccessor:
     def __init__(self, series):
@@ -546,25 +575,6 @@ class UfloatSeriesAccessor:
     @property
     def s(self):
         return pd.Series(self._asuarray.s, index=self._obj.index, name=self._obj.name)
-
-    # @property
-    # def sep(self):
-    #     df = pd.DataFrame(data=None, index=self._obj.index)
-    #     for column_name in self._obj:
-    #         if isinstance(self._obj[column_name].iloc[0], AffineScalarFunc):
-    #             series_n = self._obj[column_name].astype("ufloat").u.n
-    #             series_s = self._obj[column_name].astype("ufloat").u.s
-    #             # TODO: change 'd' to PREFIX
-    #             series_s.name = f"d{series_s.name}"
-    #             df = pd.concat([df, series_n, series_s], axis=1)
-    #         else:
-    #             df = pd.concat([df, self._obj[column_name]], axis=1)
-
-    #     return df
-
-
-UfloatArray._add_arithmetic_ops()
-UfloatArray._add_comparison_ops()
 
 
 @register_dataframe_accessor("u")
@@ -642,5 +652,3 @@ class UfloatDataFrameAccessor:
                 df = pd.concat([df, self._obj[column_name]], axis=1)
 
         return df
-
-        # if not re.match(r"^d(\w)+(\.\d+)?$", column_name):
