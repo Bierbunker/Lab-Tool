@@ -1,8 +1,12 @@
 from labtool_ex2.dtype import UfloatArray
 from labtool_ex2.dtype import UfloatDtype
+from labtool_ex2.uarray import UArray
+from uncertainties.core import AffineScalarFunc, Variable
+
 import pandas as pd
 import numpy as np
 import uncertainties.unumpy as unp
+from uncertainties import unumpy
 import os
 
 test_list = list(range(10)) + [4, np.nan]  # type: ignore
@@ -55,6 +59,7 @@ def test_6():
     print("\nTest 6\n")
     series = pd.Series(test_uarray, name="u", dtype="ufloat")
     print(series.u.s)
+    assert issubclass(type(series.iloc[0]), AffineScalarFunc)
 
 
 def test_7():
@@ -124,15 +129,6 @@ def test_10():
     filepath = os.path.join(os.path.dirname(__file__), "./data/output/df.u.com.csv")
     # filepath.parent.mkdir(parents=True, exist_ok=True)
     # temp = pd.read_csv(filepath).astype("ufloat")  # type: ignore
-    temp = pd.read_csv(filepath).astype(UfloatDtype())  # type: ignore
-    print(temp)
-    print(temp.dtypes)
-    # print(pd.to_numeric(temp.P1))
-    print(temp.convert_dtypes())
-    temp["y"] = temp.P1 + temp.U
-    print(temp.y)
-    print(type(temp.y[0]))
-    print(type(temp.iloc[0, 0]))
     assert all(df.u.com == pd.read_csv(filepath).astype("ufloat"))  # type: ignore
     filepath = os.path.join(os.path.dirname(__file__), "./data/output/df.u.com.u.n.csv")
     # filepath.parent.mkdir(parents=True, exist_ok=True)
@@ -184,8 +180,45 @@ def test_13():
     df = pd.read_csv(str(path))
     df = df.u.com  # type: ignore
     y = df.P1 + df.U.astype("ufloat")
-    print(type(y[0]))
-    print(y)
+    assert type(y[0]) == AffineScalarFunc
+
+
+def test_14():
+    """
+    This tests the automatic conversion of strings to ufloat
+    """
+    filepath = os.path.join(os.path.dirname(__file__), "./data/output/df.u.com.csv")
+    temp = pd.read_csv(filepath).astype("ufloat")  # type: ignore
+    # temp = pd.read_csv(filepath, dtype=UfloatDtype()).astype(UfloatDtype())  # type: ignore
+    temp.u.sep
+    P1 = unumpy.uarray(temp.P1.u.n, temp.P1.u.s)
+    U = unumpy.uarray(temp.U.u.n, temp.U.u.s)
+    assert all(temp.dtypes == "ufloat")
+
+    # print(pd.to_numeric(temp.P1))
+    temp["y"] = temp.P1 + temp.U
+    # print(P1 + U)
+    # print(temp.y)
+    # for x, y in zip(temp.y, P1 + U):
+    #     print(x.n, x.s, y.n, y.s)
+    #     print(type(x), type(y))
+    #     print(x == y, x.n == y.n, x.s == y.s)
+    dimsum = UArray(P1 + U)
+    assert all(
+        temp.y != dimsum
+    )  # I know this is stupid however uncertainties does it this way
+    assert all(temp.y.u.n == dimsum.n)
+    assert all(temp.y.u.s == dimsum.s)
+    assert type(temp.y[0]) == AffineScalarFunc
+    assert type(temp.iloc[0, 0]) == Variable
+
+
+# should raise error
+# def test_15():
+#     series = pd.Series(test_uarray, dtype="ufloat")
+#     try:
+#         series.u.sep
+#     except:
 
 
 # UArray.n /.s (sub-class from np.ndarray)
@@ -195,3 +228,4 @@ def test_13():
 
 # for _, func in inspect.getmembers(sys.modules['__main__'], inspect.isfunction):
 #    func()
+# test_14()
