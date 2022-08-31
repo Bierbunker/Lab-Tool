@@ -44,6 +44,6 @@ if __name__ == "__main__":  #! only for testing delete later
         if p.exists:
             rmtree(TEST_PATH)
         else:
-            raise ("!!! TEST failed ROOT not created!")
+            raise Exception("!!! TEST failed ROOT not created!")
     except Exception:
         pass
