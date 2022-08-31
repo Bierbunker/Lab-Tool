@@ -7,36 +7,40 @@ import numpy as np
 # import scipy as sp
 # import sympy
 import pandas
-import math
 import re
 import io
 import sys
 import sympy as simp
 import inspect
 from collections.abc import Iterable
+from pandas import DataFrame
 from sympy.utilities.iterables import ordered
 import matplotlib
-from typing import Callable, Union, Any
+from typing import Callable, Union, Any, Sequence, Optional
+from pandas._typing import (
+    FilePathOrBuffer,
+)
+from sympy.core.expr import Expr
 from scipy import integrate
 from scipy.signal import find_peaks
-from lmfit import Parameters
-from lmfit import conf_interval2d
 
-from sympy.interactive import printing
+# from lmfit import Parameters
+# from lmfit import conf_interval2d
+# from lmfit.models import LinearModel
+
 from lmfit.models import ExpressionModel
-from lmfit.models import LinearModel
 from uncertainties import ufloat
-from uncertainties import nominal_value
-from uncertainties import std_dev
-from uncertainties.core import format_num
-from numpy.typing import ArrayLike
+# from uncertainties.core import format_num
 from .helpers import round_up
 
 from pathlib import Path
 from .LatexPrinter import latex
+import labtool_ex2.symbol as s
+# from .symbol import _custom_var
 
-from sympy import Matrix, hessian, lambdify
-
+from sympy import Matrix, hessian, lambdify, symbols
+from sympy.interactive import printing
+from matplotlib.legend import Legend
 
 # dont fucking move this line
 
@@ -45,9 +49,6 @@ from matplotlib.legend import _get_legend_handles_labels
 import matplotlib.pyplot as plt
 
 
-# from math import floor
-# from math import sqrt
-
 DataFrameLike = UArrayLike = ItDepends = Any
 
 printing.init_printing(use_latex=True)
@@ -55,41 +56,55 @@ printing.init_printing(use_latex=True)
 
 class Project:
     def __init__(
-        self, name, global_variables=dict(), global_mapping=dict(), font=10, infer=True
+        self,
+        name: Optional[str],
+        global_variables: dict[str, str] = dict(),
+        global_mapping: dict[str, str] = dict(),
+        font: int = 10,
+        infer: bool = True,
     ):
-        self.name = name
+        self.name: Optional[str] = name
         # self.equations = dict()
-        self.gm = global_mapping
-        self.gv = global_variables
-        self._infer = infer
-        self.figure = plt.figure()
+        self.gm: dict[str, str] = global_mapping
+        self.gv: dict[str, str] = global_variables
+        self._infer: bool = infer
+        self.figure: plt.Figure = plt.figure()
         # self.data_path = list() glob internal PATH variable
         # BEGIN these are currently not used but maybe in the future
-        self.messreihen_dfs = list()
-        self.working_dfs = list()
-        self.local_ledger = dict()
+        self.messreihen_dfs: list = list()
+        self.working_dfs: list = list()
+        self.local_ledger: dict = dict()
         # END these are currently not used but maybe in the future
-        self.raw_data = pandas.DataFrame()
-        self.data = pandas.DataFrame()
-        self.dfs = dict()
-        self.load_data_counter = 0
-        rcsettings = {
-            "font.size": font,
-            "xtick.labelsize": 9,
-            "ytick.labelsize": 9,
-            "text.usetex": True,
-            "text.latex.preamble": r"\usepackage{lmodern} \usepackage{siunitx}",
-            "font.family": "Latin Modern Roman",
-        }
-        plt.rcParams.update(rcsettings)
+        self.raw_data: DataFrame = DataFrame()
+        self.data: DataFrame = DataFrame([1, 2])
+        self.dfs: dict[str, DataFrame] = dict()
+        self.load_data_counter: int = 0
+        if name is not None:
+            rcsettings = {
+                "font.size": font,
+                "xtick.labelsize": 9,
+                "ytick.labelsize": 9,
+                "text.usetex": True,
+                "text.latex.preamble": r"\usepackage{lmodern} \usepackage{siunitx}",
+                "font.family": "Latin Modern Roman",
+            }
+            plt.rcParams.update(rcsettings)
 
-        p = Path(f"./Output/{name}/")
-        p.mkdir(parents=True, exist_ok=True)
+            p = Path(f"./Output/{name}/")
+            p.mkdir(parents=True, exist_ok=True)
+
         # inject variables into global namespace can be improved if necessary however sympy does the same thing
-        simp.var(list(global_variables))
+        s._custom_var(list(global_variables), project=self)
+        # simp.var(list(global_variables), cls=Symbol, df=self.data)
 
     # import sys
     # import ctypes
+
+    def vload(self, names: Optional[list[str]], **args):
+        if names:
+            s._custom_var(names=names, project=self, **args)
+        else:
+            s._custom_var(names=list(self.gv), project=self, **args)
 
     # def hack():
     #     # Get the frame object of the caller
@@ -106,29 +121,37 @@ class Project:
 
     # func()
 
-    def __str__(self):
-        return f"""This is the {self.name} Project \n
+    def __str__(self) -> str:
+        return f"""This is the [self.name] Project \n
                 following mappings happen in this project {self.gm}"""
 
-    def load_data(self, path, loadnew=False, clean=True):
+    def load_data(
+        self,
+        path: Union[str, FilePathOrBuffer],
+        loadnew: bool = False,
+        clean: bool = True,
+    ) -> None:
         """
         path is the file containing csv data
         loadnew resets the currently loaded data dataframe should be used when importing many files
         clean should not be touched if you don't know what you are doing contact max if raw data is need"""
-        print("\n\nLoading Data from: " + path)
+        print("\n\nLoading Data from: " + str(path))
         if loadnew:
-            self.data = pandas.DataFrame(data=None)
-        df = pandas.read_csv(path, header=[0, 1], skipinitialspace=True)
+            self.data.drop(self.data.index, inplace=True)
+            # self.data = pandas.DataFrame(data=None)
+        df = pandas.read_csv(
+            path, header=[0, 1], skipinitialspace=True  # type: ignore
+        )  # type: DataFrame
         df.columns = pandas.MultiIndex.from_tuples(
             df.columns, names=["type", "variable"]
         )
         self.load_data_counter += 1
         self.raw_data = df.astype(float)
         if clean:
-            name = Path(path).stem
+            name = Path(path).stem  # type: ignore
             self._clean_dataset(name=name)
 
-    def _clean_dataset(self, name, use_min=False):
+    def _clean_dataset(self, name: str, use_min: bool = False):
         for var in self.raw_data.droplevel("type", axis=1).columns:
             if not re.match(r"^d(\w)+(\.\d+)?$", var):
                 reg_var = rf"^{var}(\.\d+)?$"
@@ -170,7 +193,7 @@ class Project:
         self.messreihen_dfs.append(self.data)
         self.dfs[name] = self.data
 
-    def find_possible_zero(self, identifier):
+    def find_possible_zero(self, identifier) -> DataFrameLike:
         """Finds possible zeros in the dataset on a column <identifier>"""
         return self.data[~self.data[identifier].astype(bool)]
 
@@ -193,7 +216,7 @@ class Project:
 
         """
         df = pandas.DataFrame(data=None)
-        for c in self.variables.split():
+        for c in self.variables.split():  # type: ignore
             reg = rf"^{c}$"
             if raw_data:
                 filt = self.raw_data.droplevel("type", axis=1).filter(regex=reg)
@@ -209,7 +232,7 @@ class Project:
 
         """
         df = pandas.DataFrame(data=None)
-        for c in self.variables.split():
+        for c in self.variables.split():  # type: ignore
             reg = rf"^d{c}$"
             if raw_data:
                 filt = self.raw_data.droplevel("type", axis=1).filter(regex=reg)
@@ -225,7 +248,7 @@ class Project:
 
         """
         df = pandas.DataFrame(data=None)
-        for c in self.variables.split():
+        for c in self.variables.split():  # type: ignore
             reg = rf"^(d)?{c}$"
             if raw_data:
                 filt = self.raw_data.droplevel("type", axis=1).filter(regex=reg)
@@ -299,11 +322,14 @@ class Project:
     TODO write own to latex function export data with the use of siunitx plugin
     """
 
-    def print_expr(self, expr):
+    def print_expr(self, expr: Expr):
         """Prints the expression in latex format and substitutes the variables according to the mapping"""
         print(latex(expr=expr, symbol_names=self.gm))
 
-    def print_table(self, df, name=None):
+    # def print_table(self, expr: Expr):
+    #     pass
+
+    def print_table(self, df: DataFrameLike, name: Optional[str] = None):
         """Tries to export dataframe to latex table
 
         :df: TODO
@@ -338,7 +364,13 @@ class Project:
             with open(f"./Output/{self.name}/messreihe_{df.name}.tex", "w") as tf:
                 tf.write(df.to_latex(escape=False))
 
-    def print_ftable(self, df, name=None, format="standard", split=False):
+    def print_ftable(
+        self,
+        df: DataFrameLike,
+        name: Optional[str] = None,
+        format: str = "standard",
+        split: bool = False,
+    ):
         df = df.u.com
         numColumns = df.shape[1]
         numRows = df.shape[0]
@@ -369,7 +401,7 @@ class Project:
         output.write("\\begin{tblr}{" + esses + "}\n")
         if split:
 
-            def format_value(x):
+            def format_value(x):  # type: ignore
                 fmt_x = x.__format__("")
                 if "e" in fmt_x:
                     val, exp = fmt_x.split("e", 1)
@@ -420,7 +452,7 @@ class Project:
                 tf.write(output.getvalue())
         # return output.getvalue()
 
-    def figure_legend(self, **kwargs):
+    def figure_legend(self, **kwargs) -> None:
         """
         This function is used to add a legend to a figure for printing.
         This is the preferred function to use.
@@ -428,16 +460,16 @@ class Project:
         """
         self.figure.legend(*_get_legend_handles_labels(self.figure.axes), **kwargs)
 
-    def ax_legend_all(self, **kwargs):
+    def ax_legend_all(self, **kwargs) -> None:
         """
         This function adds all legend to the first axes don't use this, use figure_legend
         """
-        self.figure.get_axes()[0].legend(
+        self.figure.get_axes()[0].legend(  # type:ignore
             *_get_legend_handles_labels(self.figure.axes), **kwargs
         )
 
     # this is only an explanation of the two functions above
-    def _fig_legend(self, **kwdargs):
+    def _fig_legend(self, **kwdargs) -> Legend:
 
         # generate a sequence of tuples, each contains
         #  - a list of handles (lohand) and
@@ -463,9 +495,9 @@ class Project:
 
         return self.figure.legend(handles, labels, **kwdargs)
 
-    def _find_axes(self, xlabel=None, ylabel=None):
+    def _find_axes(self, xlabel: Optional[str] = None, ylabel: Optional[str] = None):
         if xlabel and ylabel:
-            for ax in self.figure.get_axes():
+            for ax in self.figure.get_axes():  # type:ignore
                 print(f"testing {ax.get_xlabel()} and {ax.get_ylabel()}")
                 if (ax.get_xlabel() == xlabel or ax.get_xlabel() == "") and (
                     ax.get_ylabel() == ylabel or ax.get_ylabel() == ""
@@ -473,17 +505,19 @@ class Project:
                     return ax
             return None
         elif xlabel:
-            for ax in self.figure.get_axes():
+            for ax in self.figure.get_axes():  # type:ignore
                 if ax.get_xlabel() == xlabel:
                     return ax
             return None
         elif ylabel:
-            for ax in self.figure.get_axes():
+            for ax in self.figure.get_axes():  # type:ignore
                 if ax.get_ylabel() == ylabel:
                     return ax
             return None
 
-    def _set_x_y_label(self, ax, x, y, color="k"):
+    def _set_x_y_label(
+        self, ax: plt.Axes, x: str, y: str, color: str = "k"
+    ) -> plt.Axes:
         unitx = self.gv[x]
         unity = self.gv[y]
         if x in self.gm:
@@ -529,13 +563,13 @@ class Project:
 
     def plot_data(
         self,
-        axes,
-        x,
-        y,
-        label,
-        style="r",
-        errors=False,
-    ):
+        axes: plt.Axes,
+        x: str,
+        y: str,
+        label: str,
+        style: str = "r",
+        errors: bool = False,
+    ) -> None:
         raw_x = self.data[x]
         raw_y = self.data[y]
         axes = self._set_x_y_label(ax=axes, x=x, y=y, color=style)
@@ -565,11 +599,17 @@ class Project:
 
         # axes.legend(loc=0)
 
-    def _expr_to_np(self, expr):
+    def _expr_to_np(self, expr: Expr) -> Callable:
         """Converts a Sympy Expression to a numpy calculable function"""
         return simp.lambdify(tuple(expr.free_symbols), expr, "numpy")
 
-    def apply_df(self, expr, infer=None, name=None, errors=None):
+    def apply_df(
+        self,
+        expr: Expr,
+        infer: bool | None = None,
+        name: str | None = None,
+        errors: bool = False,
+    ) -> DataFrameLike:
         """Uses expr and internal data to calculate the value described by expr"""
 
         # def varnameis(v):
@@ -587,10 +627,10 @@ class Project:
         if infer:
             # nice hack which finds the name of the parameters which called this function
             func_name = sys._getframe().f_code.co_name
-            line_of_code = inspect.stack()[1][4][0]
+            line_of_code = inspect.stack()[1][4][0]  # type: ignore
             reg = func_name + r"\((?P<params>.+)\)"
             match = re.search(reg, line_of_code)
-            params = match.group("params").split(",")
+            params = match.group("params").split(",")  # type: ignore
 
         if name is not None:
             params[0] = name
@@ -606,7 +646,7 @@ class Project:
         if hasattr(expr, "lhs"):
             for var in expr.free_symbols:
                 var = str(var)
-                if var is not expr.lhs:
+                if var is not expr.lhs:  # type: ignore
                     series = self.data[var]
                     function_data[var] = series.to_numpy()
         else:
@@ -623,7 +663,7 @@ class Project:
         else:
             return self._expr_to_np(expr)(**function_data)
 
-    def apply_df_err(self, expr):
+    def apply_df_err(self, expr: Expr) -> DataFrameLike:
         """Uses expr and internal data to calculate the error described by expr"""
         function_data = dict()
         err_expr = self._error_func(expr=expr)
@@ -633,14 +673,15 @@ class Project:
             function_data[var] = series.to_numpy()
         return self._expr_to_np(expr=err_expr)(**function_data)
 
-    def _error_func(self, expr):
+    def _error_func(self, expr: Expr) -> Expr:
         """Uses expr and find its groessenunsicherheits methoden representation"""
         vs = list(ordered(expr.free_symbols))
 
         def gradient(f, vs):
             return Matrix([f]).jacobian(vs)
 
-        e_func = 0
+        e_func = Expr()
+        # e_func = 0
         errs = " ".join([f"d{s}" for s in vs])
         er = simp.symbols(errs)
         if not isinstance(er, Iterable):
@@ -649,7 +690,7 @@ class Project:
             e_func = e_func + abs(c) * s
         return e_func
 
-    def find_min_sign_changes(self, df, identifier):
+    def find_min_sign_changes(self, df: DataFrameLike, identifier) -> DataFrameLike:
         """Operation on data column <identifier> find places where a sign flip happend"""
         vals = df[identifier].values
         abs_sign_diff = np.abs(np.diff(np.sign(vals) + (vals == 0)))
@@ -665,7 +706,7 @@ class Project:
         # min_idx = np.abs(vals[change_idx]).argmin(1)
         # return df.iloc[change_idx[range(len(change_idx)), min_idx]]
         min_idx = np.abs(vals[change_idx]).argmin(1)
-        return df.iloc[change_idx[range(len(change_idx)), min_idx]]
+        return df.iloc[change_idx[range(len(change_idx)), min_idx]]  # type:ignore
 
     def probe_for_zeros(self, start, end, identifier, filter):
         # TODO remove t filter
@@ -696,7 +737,9 @@ class Project:
         mag2, phase2 = self.find_phase_and_gain(t, w, f)
         return phase1 - phase2
 
-    def find_phase_and_gain(self, t, v, f):
+    def find_phase_and_gain(
+        self, t: Sequence[int], v: Sequence[int], f: int
+    ) -> tuple[int, int]:
         a_sum = 0  # now do it all again for the output wave
         b_sum = 0
         w = 2 * np.pi * f
@@ -711,7 +754,16 @@ class Project:
         print(phase)
         return (mag, phase)
 
-    def plot_function(self, axes, x, y, expr, label, errors=False, style="r"):
+    def plot_function(
+        self,
+        axes: plt.Axes,
+        x: str,
+        y: str,
+        expr: Expr,
+        label: str,
+        errors: bool = False,
+        style: str = "r",
+    ):
         # fig, ax = self.get_fig_ax(figure, toggle_add_subplot)
         x_data = self.data[x]
         # x_continues_plot_data = np.linspace(x_data.min(), x_data.max(), 1000)
@@ -747,20 +799,20 @@ class Project:
 
     def plot_fit(
         self,
-        axes,
-        x,
-        y,
+        axes: plt.Axes,
+        x: str,
+        y: str,
         eqn,
-        style="r",
-        label="fit",
-        use_all_known=False,
-        offset=[0, 0],
-        guess=None,
-        bounds=None,
-        add_fit_params=True,
-        granularity=10000,
-        gof=False,
-        sigmas=1,
+        style: str = "r",
+        label: str = "fit",
+        use_all_known: bool = False,
+        offset: tuple[int, int] = (0, 0),
+        guess: dict[str, int] | None = None,
+        bounds: list[dict[str, str]] | None = None,
+        add_fit_params: bool = True,
+        granularity: int = 10000,
+        gof: bool = False,
+        sigmas: int = 1,
     ):
         """axes current main axes to plot on
         x string of independent variable
@@ -891,7 +943,7 @@ class Project:
         # axes.legend(loc=0)
         print(out.fit_report(min_correl=0.25))
 
-    def savefig(self, name, clear=True):
+    def savefig(self, name: str, clear: bool = True) -> Optional[plt.Axes]:
         """Use this method to save your figures"""
         self.figure.savefig(f"./Output/{self.name}/" + name, dpi=400)
         if clear:
@@ -899,7 +951,9 @@ class Project:
             ax = self.figure.add_subplot()
             return ax
 
-    def add_text(self, axes, keyvalue, offset=[0, 0]):
+    def add_text(
+        self, axes: plt.Axes, keyvalue: dict[str, Any], offset: tuple = (0, 0)
+    ):
         """Write text inside on an axes"""
         # maxes = max([_.zorder for _ in axes.get_children()])
         # print(maxes)
