@@ -229,3 +229,5 @@ def test_14():
 # for _, func in inspect.getmembers(sys.modules['__main__'], inspect.isfunction):
 #    func()
 # test_14()
+if __name__ == "__main__":
+    test_14()
