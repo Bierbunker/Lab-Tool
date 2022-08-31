@@ -2,8 +2,9 @@
     numpy
     matplotlib
     uncertainties
-    sympy
+    sympy>=1.11
     lmfit
     uncertainties
     numdifftools
     scikit-learn
+    pytest
