@@ -32,7 +32,6 @@ def test_creation():
     assert str(tau) == "tau"
     assert type(t) == Symbol
     assert type(tau) == Symbol
-    print(dir(t))
     # print(type(t))
     with pytest.raises(KeyError) as exc_info:
         t.data
@@ -47,5 +46,25 @@ def test_creation():
     assert all(t.data == P.data["t"])
 
 
+def test_symbol():
+    gm = {
+        "t": r"t",
+        "tau": r"\tau",
+    }
+    gv = {
+        "t": r"\si{\second}",
+        "tau": r"\si{\second}",
+    }
+    P = Project(None, global_variables=gv, global_mapping=gm, font=13)
+    filepath = os.path.join(os.path.dirname(__file__), "./data/input/short_test.csv")
+    P.load_data(filepath)
+
+    summe = t + tau
+    P.zz(summe)
+    print(summe)
+    print(type(summe))
+    print(P.data)
+
+
 # test_creation()
-# test_c_symbol()
+# test_symbol()
