@@ -27,7 +27,7 @@ def test_creation():
         "t": r"\si{\second}",
         "tau": r"\si{\second}",
     }
-    P = Project("Test", global_variables=gv, global_mapping=gm, font=13)
+    P = Project(None, global_variables=gv, global_mapping=gm, font=13)
     assert str(t) == "t"
     assert str(tau) == "tau"
     assert type(t) == Symbol
