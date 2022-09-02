@@ -30,12 +30,14 @@ from scipy.signal import find_peaks
 
 from lmfit.models import ExpressionModel
 from uncertainties import ufloat
+
 # from uncertainties.core import format_num
 from .helpers import round_up
 
 from pathlib import Path
 from .LatexPrinter import latex
 import labtool_ex2.symbol as s
+
 # from .symbol import _custom_var
 
 from sympy import Matrix, hessian, lambdify, symbols
@@ -76,7 +78,7 @@ class Project:
         self.local_ledger: dict = dict()
         # END these are currently not used but maybe in the future
         self.raw_data: DataFrame = DataFrame()
-        self.data: DataFrame = DataFrame([1, 2])
+        self.data: DataFrame = DataFrame()
         self.dfs: dict[str, DataFrame] = dict()
         self.load_data_counter: int = 0
         if name is not None:
@@ -601,7 +603,41 @@ class Project:
 
     def _expr_to_np(self, expr: Expr) -> Callable:
         """Converts a Sympy Expression to a numpy calculable function"""
+        print(tuple(expr.free_symbols))
         return simp.lambdify(tuple(expr.free_symbols), expr, "numpy")
+
+    def zz(self, expr: Expr):
+        notfound = list()
+        function_data = dict()
+        # print(expr.free_symbols)
+        # print(self.data.columns)
+        for var in expr.free_symbols:
+            if isinstance(var, s.Symbol):
+                if var.name not in self.data.columns:
+                    notfound.append(var.name)
+                    continue
+
+                function_data[var.name] = var.data.to_numpy()
+            else:
+                print("ohno")
+
+        if notfound:
+            raise Exception(f"Data for the following variables are missing: {notfound}")
+
+        func_name = sys._getframe().f_code.co_name
+        line_of_code = inspect.stack()[1][4][0]  # type: ignore
+        reg = func_name + r"\((?P<params>.+)\)"
+        match = re.search(reg, line_of_code)
+        params = match.group("params").split(",")  # type: ignore
+        new_var = params[0]
+        self.data[new_var] = self._expr_to_np(expr=expr)(**function_data)
+        s._custom_var(list(new_var), project=self)
+        # TODO use physipy for unit translation and calculation so that units are automatically calculated
+
+        # do = [var.name in self.data.columns for var in expr.free_symbols]
+        # names = [var.name for var in expr.free_symbols]
+        # if all(name in self.data.columns for name in names):
+        #     print(names)
 
     def apply_df(
         self,

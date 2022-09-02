@@ -9,6 +9,8 @@ from pandas import DataFrame
 from sympy import Basic, FunctionClass
 from sympy import symbols
 
+from sympy.utilities.iterables import NotIterable
+
 # from .project import Project
 
 # from . import project as p
@@ -16,54 +18,27 @@ import labtool_ex2.project as p
 
 
 # I need a symbol which is backed by data and allows easy access
-class Symbol(SimpSymbol):
-    # def __new__(cls, name, df: DataFrame = DataFrame(), **assumptions):
-    #     super.__new__(name, **assumptions)
+class Symbol(SimpSymbol, NotIterable):
     def __new__(cls, name, project: Optional[p.Project] = None, **assumptions):
-        # obj = SimpSymbol.__new__(cls, name, **assumptions)
-        # print(f"Hello {assumptions}")
-        # print(f"world {df}")
-        # try:
-        #     del assumptions["df"]
-        # except KeyError:
-        #     pass
-        # print(df)
         if project is None:
             project = p.Project(None)
 
         obj = super().__new__(cls, name, **assumptions)
-        # print(f"bruh {dir(obj)}")
-        obj._project: p.Project = project
-        # obj._df["bruh"] = [0, 4]
+        obj._project = project  # type: ignore
         return obj
 
-    # def __new__(cls, name, df: DataFrame = DataFrame(), **assumptions):
-    #     # obj = SimpSymbol.__new__(cls, name, **assumptions)
-    #     # print(f"Hello {assumptions}")
-    #     # print(f"world {df}")
-    #     # try:
-    #     #     del assumptions["df"]
-    #     # except KeyError:
-    #     #     pass
-    #     # print(df)
-
-    #     obj = super().__new__(cls, name, **assumptions)
-    #     # print(f"bruh {dir(obj)}")
-    #     obj._df = df
-    #     obj._df["bruh"] = [0, 4]
-    #     return obj
-
-    # def __init__(self, name, df):
-    #     # print(df)
-    #     # self._df: DataFrame
-    #     # super().__init__(name)
-    #     super().__init__()
+    def __init__(self, name, project):
+        self._project: p.Project
+        super().__init__()
 
     # lazy evaluation
     @property
     def data(self) -> AnyArrayLike:
         # try:
         return self._project.data[self.name]
+
+    # def __len__(self) -> int:
+    #     return len(self.data)
 
     # @property
     # def data(self) -> AnyArrayLike:
@@ -98,7 +73,7 @@ class Symbol(SimpSymbol):
         return self.data[item]
 
 
-def _custom_var(names: list[str], project: Project, **args):  # noqa
+def _custom_var(names: list[str], project: p.Project, **args):  # noqa
     """
     Create symbols and inject them into the global namespace.
 
