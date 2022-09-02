@@ -37,8 +37,8 @@ class Symbol(SimpSymbol, NotIterable):
         # try:
         return self._project.data[self.name]
 
-    # def __len__(self) -> int:
-    #     return len(self.data)
+    def __len__(self) -> int:
+        return len(self.data)
 
     # @property
     # def data(self) -> AnyArrayLike:
