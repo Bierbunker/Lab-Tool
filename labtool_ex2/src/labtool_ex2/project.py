@@ -603,7 +603,9 @@ class Project:
         print(tuple(expr.free_symbols))
         return simp.lambdify(tuple(expr.free_symbols), expr, "numpy")
 
-    def zz(self, expr: Expr):
+    def resolve(self, expr: Expr):
+        """As in '(of something seen at a distance) turn into a different form when seen more clearly:
+        ex. the orange light resolved itself into four roadwork lanterns'"""
         notfound = list()
         function_data = dict()
         # print(expr.free_symbols)
@@ -840,8 +842,8 @@ class Project:
         style: str = "r",
         label: str = "fit",
         use_all_known: bool = False,
-        offset: tuple[int, int] = (0, 0),
-        guess: dict[str, int] | None = None,
+        offset: Union[tuple[int, int], list[int]] = (0, 0),
+        guess: dict[str, Union[int, float]] | None = None,
         bounds: list[dict[str, str]] | None = None,
         add_fit_params: bool = True,
         granularity: int = 10000,

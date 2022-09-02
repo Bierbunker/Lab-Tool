@@ -60,11 +60,12 @@ def test_symbol():
     P.load_data(filepath)
 
     summe = t + tau
-    P.zz(summe)
+    P.resolve(summe)
     print(summe)
     print(type(summe))
     print(P.data)
 
 
+# test for adding ufloat array stuff
 # test_creation()
 # test_symbol()
