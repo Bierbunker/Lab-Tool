@@ -17,9 +17,6 @@ from pandas import DataFrame
 from sympy.utilities.iterables import ordered
 import matplotlib
 from typing import Callable, Union, Any, Sequence, Optional
-from pandas._typing import (
-    FilePathOrBuffer,
-)
 from sympy.core.expr import Expr
 from scipy import integrate
 from scipy.signal import find_peaks
@@ -129,7 +126,7 @@ class Project:
 
     def load_data(
         self,
-        path: Union[str, FilePathOrBuffer],
+        path: Union[str, Path],
         loadnew: bool = False,
         clean: bool = True,
     ) -> None:
@@ -630,6 +627,7 @@ class Project:
         match = re.search(reg, line_of_code)
         params = match.group("params").split(",")  # type: ignore
         new_var = params[0]
+        print(new_var)
         self.data[new_var] = self._expr_to_np(expr=expr)(**function_data)
         s._custom_var(list(new_var), project=self)
         # TODO use physipy for unit translation and calculation so that units are automatically calculated
