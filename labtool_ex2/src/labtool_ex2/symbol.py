@@ -46,6 +46,7 @@ class Symbol(SimpSymbol, NotIterable):
     #     return self._df[self.name]
     # except KeyError:
     # pass
+    # This Symbol isn't backed by any data like the outlandish claims of Donald J. Trump
     # raise KeyError(
     #     f"Couldn't find '{self.name}' as an index in the Data-Source try loading some values!"
     # )
@@ -109,19 +110,38 @@ def _custom_var(names: list[str], project: p.Project, **args):  # noqa
 
     """
 
+    print(names)
+
     def traverse(symbols, frame):
         """Recursively inject symbols to the global namespace."""
         for symbol in symbols:
             if isinstance(symbol, Basic):
                 frame.f_globals[symbol.name] = symbol  # type: ignore
+                if symbol.name in frame.f_locals:  # type: ignore
+                    import ctypes
+
+                    frame.f_locals.update({symbol.name: symbol})  # type: ignore
+                    ctypes.pythonapi.PyFrame_LocalsToFast(
+                        ctypes.py_object(frame), ctypes.c_int(0)
+                    )
             elif isinstance(symbol, FunctionClass):
                 frame.f_globals[symbol.__name__] = symbol
+                if symbol.__name__ in frame.f_locals:  # type: ignore
+                    import ctypes
+
+                    frame.f_locals.update({symbol.__name__: symbol})  # type: ignore
+                    ctypes.pythonapi.PyFrame_LocalsToFast(
+                        ctypes.py_object(frame), ctypes.c_int(0)
+                    )
             else:
                 traverse(symbol, frame)
 
     from inspect import currentframe
 
     frame = currentframe().f_back.f_back  # type: ignore
+    # print(frame)
+    # print(frame.f_globals)
+    # print(frame.f_locals)
 
     try:
         syms = symbols(names, cls=Symbol, project=project, **args)
@@ -129,11 +149,28 @@ def _custom_var(names: list[str], project: p.Project, **args):  # noqa
         if syms is not None:
             if isinstance(syms, Basic):
                 frame.f_globals[syms.name] = syms  # type: ignore
+                if syms.name in frame.f_locals:  # type: ignore
+                    import ctypes
+
+                    frame.f_locals.update({syms.name: syms})  # type: ignore
+                    ctypes.pythonapi.PyFrame_LocalsToFast(
+                        ctypes.py_object(frame), ctypes.c_int(0)
+                    )
             elif isinstance(syms, FunctionClass):
                 frame.f_globals[syms.__name__] = syms  # type: ignore
+                if syms.__name__ in frame.f_locals:  # type: ignore
+                    import ctypes
+
+                    frame.f_locals.update({syms.__name__: syms})  # type: ignore
+                    ctypes.pythonapi.PyFrame_LocalsToFast(
+                        ctypes.py_object(frame), ctypes.c_int(0)
+                    )
             else:
                 traverse(syms, frame)
     finally:
+        # print(frame)
+        # print(frame.f_globals)
+        # print(frame.f_locals)
         del frame  # break cyclic dependencies as stated in inspect docs
 
     return syms
