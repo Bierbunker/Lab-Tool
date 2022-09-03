@@ -1,6 +1,5 @@
 from labtool_ex2 import Project
 from labtool_ex2 import Symbol
-from pandas import DataFrame
 from sympy import symbols
 import os
 
@@ -55,14 +54,47 @@ def test_symbol():
         "t": r"\si{\second}",
         "tau": r"\si{\second}",
     }
+    p = Project(None, global_variables=gv, global_mapping=gm, font=13)
+    filepath = os.path.join(os.path.dirname(__file__), "./data/input/short_test.csv")
+    p.load_data(filepath)
+
+    summe = t + tau
+    assert str(summe) == "t + tau"
+    p.resolve(summe)
+    from inspect import currentframe
+
+    frame = currentframe()  # type: ignore
+    assert summe.name in frame.f_locals and summe.name in frame.f_globals  # type:ignore
+    assert type(summe) is Symbol
+    assert summe.name == "summe"
+    assert all(summe.data == p.data.t + p.data.tau)
+    print(p.data)
+
+
+def test_usymbol():
+    gm = {
+        "t": r"t",
+        "tau": r"\tau",
+    }
+    gv = {
+        "t": r"\si{\second}",
+        "tau": r"\si{\second}",
+    }
     P = Project(None, global_variables=gv, global_mapping=gm, font=13)
     filepath = os.path.join(os.path.dirname(__file__), "./data/input/short_test.csv")
     P.load_data(filepath)
+    P.data = P.data.u.com
 
     summe = t + tau
+    assert str(summe) == "t + tau"
     P.resolve(summe)
-    print(summe)
-    print(type(summe))
+    from inspect import currentframe
+
+    frame = currentframe()  # type: ignore
+    assert summe.name in frame.f_locals and summe.name in frame.f_globals  # type:ignore
+    assert type(summe) is Symbol
+    assert summe.name == "summe"
+    assert all(summe.data == P.data.t + P.data.tau)
     print(P.data)
 
 
