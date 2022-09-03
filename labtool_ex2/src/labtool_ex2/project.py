@@ -37,7 +37,7 @@ import labtool_ex2.symbol as s
 
 # from .symbol import _custom_var
 
-from sympy import Matrix, hessian, lambdify, symbols
+from sympy import Matrix, hessian
 from sympy.interactive import printing
 from matplotlib.legend import Legend
 
@@ -603,7 +603,8 @@ class Project:
         print(tuple(expr.free_symbols))
         return simp.lambdify(tuple(expr.free_symbols), expr, "numpy")
 
-    def resolve(self, expr: Expr):
+    # Maybe rename it to derive
+    def resolve(self, expr: Expr, name: Optional[str] = None):
         """As in '(of something seen at a distance) turn into a different form when seen more clearly:
         ex. the orange light resolved itself into four roadwork lanterns'"""
         notfound = list()
@@ -616,22 +617,24 @@ class Project:
                     notfound.append(var.name)
                     continue
 
-                function_data[var.name] = var.data.to_numpy()
+                function_data[var.name] = var.data.to_numpy()  # type:ignore
             else:
                 print("ohno")
 
         if notfound:
             raise Exception(f"Data for the following variables are missing: {notfound}")
 
-        func_name = sys._getframe().f_code.co_name
-        line_of_code = inspect.stack()[1][4][0]  # type: ignore
-        reg = func_name + r"\((?P<params>.+)\)"
-        match = re.search(reg, line_of_code)
-        params = match.group("params").split(",")  # type: ignore
-        new_var = params[0]
-        print(new_var)
+        if name is None:
+            func_name = sys._getframe().f_code.co_name
+            line_of_code = inspect.stack()[1][4][0]  # type: ignore
+            reg = func_name + r"\((?P<params>.+)\)"
+            match = re.search(reg, line_of_code)
+            params = match.group("params").split(",")  # type: ignore
+            new_var = params[0]
+        else:
+            new_var = name
         self.data[new_var] = self._expr_to_np(expr=expr)(**function_data)
-        s._custom_var(list(new_var), project=self)
+        return s._custom_var([new_var], project=self)
         # TODO use physipy for unit translation and calculation so that units are automatically calculated
 
         # do = [var.name in self.data.columns for var in expr.free_symbols]
