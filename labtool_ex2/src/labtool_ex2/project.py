@@ -1,11 +1,5 @@
-# This is a sample Python script.
-
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
 import numpy as np
 
-# import scipy as sp
-# import sympy
 import pandas
 import re
 import io
@@ -44,8 +38,8 @@ from matplotlib.legend import Legend
 # dont fucking move this line
 
 matplotlib.use("Agg")
-from matplotlib.legend import _get_legend_handles_labels
-import matplotlib.pyplot as plt
+from matplotlib.legend import _get_legend_handles_labels  # noqa
+import matplotlib.pyplot as plt  # noqa
 
 
 DataFrameLike = UArrayLike = ItDepends = Any
