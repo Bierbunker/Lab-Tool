@@ -7,10 +7,6 @@ set -e
 
 cd "$(dirname "$0")/.."
 GIT_ROOT=$(git rev-parse --show-toplevel)
-# echo $GIT_ROOT
-
-# find $GIT_ROOT -type f -name '/bin/activate'
-# grep -rnw $GIT_ROOT -e '/bin/activate'
 cd $GIT_ROOT
 results=( $(find $GIT_ROOT -path "*/bin/activate") )
 if (( ${#results[@]} )) ; then
