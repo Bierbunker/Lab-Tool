@@ -7,3 +7,4 @@ source $ENV_BINS"activate"
 cd $ENV_BINS
 coverage run -m pytest $TEST_DIR
 coverage report -m
+coverage xml $SCRIPT_DIR"/../coverage.xml"

@@ -3,6 +3,10 @@
 ![](https://img.shields.io/github/v/release/Bierbunker/Lab-Tool?include_prereleases)
 ![](https://img.shields.io/pypi/l/labtool-ex2)
 ![](https://github.com/Bierbunker/Lab-Tool/actions/workflows/pypi.yml/badge.svg)
+[![CodeCov](https://github.com/Bierbunker/Lab-Tool/actions/workflows/codecov.yml/badge.svg)](https://github.com/Bierbunker/Lab-Tool/actions/workflows/codecov.yml)
+[![Coverage](https://codecov.io/github/Bierbunker/Lab-Tool/coverage.svg?branch=main)](https://codecov.io/gh/Bierbunker/Lab-Tool)
+
+
 
 Lab-Tool is a python package that can be used to process and visualize data
 obtained primarily from physical experiments.
