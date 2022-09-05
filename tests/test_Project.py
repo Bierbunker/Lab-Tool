@@ -68,7 +68,7 @@ def test_symbol():
     assert type(summe) is Symbol
     assert summe.name == "summe"
     assert all(summe.data == p.data.t + p.data.tau)
-    print(p.data)
+    assert hasattr(p.data, "summe")
 
 
 def test_usymbol():
@@ -92,10 +92,10 @@ def test_usymbol():
 
     frame = currentframe()  # type: ignore
     assert summe.name in frame.f_locals and summe.name in frame.f_globals  # type:ignore
-    assert type(summe) is Symbol
+    assert isinstance(summe, Symbol)
     assert summe.name == "summe"
     assert all(summe.data == P.data.t + P.data.tau)
-    print(P.data)
+    assert hasattr(P.data, "summe")
 
 
 # test for adding ufloat array stuff
