@@ -117,6 +117,7 @@ def _custom_var(names: list[str], project: p.Project, **args):  # noqa
         for symbol in symbols:
             if isinstance(symbol, Basic):
                 frame.f_globals[symbol.name] = symbol  # type: ignore
+                # magic see https://stackoverflow.com/questions/34650744/modify-existing-variable-in-locals-or-frame-f-locals
                 if symbol.name in frame.f_locals:  # type: ignore
                     import ctypes
 
