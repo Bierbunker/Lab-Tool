@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# script/bootstrap: Resolve all dependencies that the application requires to
+#                   run.
+
+set -e
+
+cd "$(dirname "$0")/.."
+GIT_ROOT=$(git rev-parse --show-toplevel)
+# echo $GIT_ROOT
+
+# find $GIT_ROOT -type f -name '/bin/activate'
+# grep -rnw $GIT_ROOT -e '/bin/activate'
+cd $GIT_ROOT
+results=( $(find $GIT_ROOT -path "*/bin/activate") )
+if (( ${#results[@]} )) ; then
+    echo "Virtual environment found"
+else
+    echo "No virtual environment was found"
+    echo "==> Installing virtualenv dependencies…"
+    pip3 install virtualenv
+    python3 -m venv env
+fi
+
+echo "==> Activate Virtual Environment…"
+source "${results[0]}"
+echo "==> Installing package dependencies…"
+pip install -e .
