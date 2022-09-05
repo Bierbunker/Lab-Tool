@@ -16,6 +16,8 @@ from scipy.integrate import simps
 
 from labtool_ex2 import Project
 
+# pyright: reportUndefinedVariable=false
+
 
 def make_project_stuff(project, start, end):
     zeros = project.probe_for_zeros(start, end, "wx")

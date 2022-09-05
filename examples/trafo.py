@@ -4,6 +4,8 @@ import pandas as pd
 from labtool_ex2 import Project
 from uncertainties import ufloat
 
+# pyright: reportUndefinedVariable=false
+
 if __name__ == "__main__":
     gm = {
         "P1": r"P_1",

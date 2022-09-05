@@ -8,6 +8,7 @@ from labtool_ex2 import Project
 from uncertainties import ufloat
 from uncertainties import umath
 
+# pyright: reportUndefinedVariable=false
 
 if __name__ == "__main__":
     # Preamble and configuration

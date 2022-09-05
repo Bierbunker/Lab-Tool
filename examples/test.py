@@ -5,6 +5,8 @@ print(dir(lt))
 
 from labtool_ex2 import Project  # flake8: noqa: E402
 
+# pyright: reportUndefinedVariable=false
+
 if __name__ == "__main__":
     gm = {"na": "N.A.", "NA": "N.A.", "xi": r"\xi"}
     gv = {"NA": "1", "d": "mm"}
