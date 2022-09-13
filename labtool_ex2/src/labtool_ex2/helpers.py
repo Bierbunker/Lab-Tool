@@ -34,6 +34,25 @@ def init_folder(root_path, root_folder_name):
     return
 
 
+def _args(*_nargs, **_kwargs):
+    """Collect call parameters from a call"""
+    return _nargs, _kwargs
+
+
+def split_into_args_kwargs(s: str) -> tuple[list[str], dict[str, str]]:
+    _nargs = list()
+    _kwargs = dict()
+    for param in s.split(","):
+        if "=" in param:
+            key, val = param.split("=")
+            key = key.strip()
+            val = val.strip()
+            _kwargs[key] = val
+            continue
+        _nargs.append(param)
+    return _nargs, _kwargs
+
+
 if __name__ == "__main__":  #! only for testing delete later
     TEST_PATH = """/home/etschgi1/CODE/UNI/Lab-Tool/pathtest_folder"""
     TEST_NAME = "hello"

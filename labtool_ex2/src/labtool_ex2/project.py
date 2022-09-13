@@ -23,7 +23,7 @@ from lmfit.models import ExpressionModel
 from uncertainties import ufloat
 
 # from uncertainties.core import format_num
-from .helpers import round_up
+from .helpers import round_up, split_into_args_kwargs
 
 from pathlib import Path
 from .LatexPrinter import latex
@@ -157,9 +157,9 @@ class Project:
 
     def _clean_dataset(self, name: str, use_min: bool = False):
         for var in self.raw_data.droplevel("type", axis=1).columns:
-            if not re.match(r"^d(\w)+(\.\d+)?$", var):
+            if not re.match(rf"^{self._err_of('')}(\w)+(\.\d+)?$", var):
                 reg_var = rf"^{var}(\.\d+)?$"
-                reg_err = rf"^d{var}(\.\d+)?$"
+                reg_err = rf"^{self._err_of('')}{var}(\.\d+)?$"
                 data = self.raw_data.droplevel("type", axis=1)
                 filtered_vardata = data.filter(regex=reg_var)
                 filtered_errdata = data.filter(regex=reg_err)
@@ -633,25 +633,10 @@ class Project:
         """This function is only for readability of the finished code"""
         self.resolve(expr, name, iserr=True)
 
-    # Maybe rename it to derive
-    def resolve(self, expr: Expr, name: Optional[str] = None, iserr: bool = False):
-        """As in '(of something seen at a distance) turn into a different form when seen more clearly:
-        ex. the orange light resolved itself into four roadwork lanterns'"""
+    def _retrieve_params(self, expr: Expr):
         notfound = list()
         function_data = dict()
         err_function_data = dict()
-
-        if name is None:
-            func_name = sys._getframe().f_code.co_name
-            line_of_code = inspect.stack()[1][4][0]  # type: ignore
-            reg = func_name + r"\((?P<params>.+)\)"
-            match = re.search(reg, line_of_code)
-            params = match.group("params").split(",")  # type: ignore
-            new_var = params[0]
-        else:
-            new_var = name
-        # print(expr.free_symbols)
-        # print(self.data.columns)
         for var in expr.free_symbols:
             if isinstance(var, s.Symbol):
                 if var.name not in self.data.columns:
@@ -669,13 +654,54 @@ class Project:
 
         if notfound:
             raise Exception(f"Data for the following variables are missing: {notfound}")
+        return function_data, err_function_data
+
+    # should be probably move to helpers
+    def _infer_name(
+        self, name: str, kw: Optional[str] = None, pos: Optional[int] = None
+    ) -> str:
+        if name is not None:
+            return name
+
+        inferred_name = ""
+        func_name = sys._getframe().f_back.f_code.co_name  # type: ignore
+        line_of_code = inspect.stack()[2][4][0]  # type: ignore
+        reg = func_name + r"\((?P<params>.+)\)"
+        match = re.search(reg, line_of_code)
+        if match is not None:
+            # params = match.group("params").split(",")  # type: ignore
+            # nargs, kwargs = eval(f'_args({match.group("params")})')
+            nargs, kwargs = split_into_args_kwargs(match.group("params"))
+            if pos is not None:
+                inferred_name = nargs[pos]  # type: ignore
+            if kw is not None:
+                try:
+                    inferred_name = kwargs[kw]  # type: ignore
+                except KeyError:
+                    pass
+            if not inferred_name.strip():
+                raise Exception(
+                    "You need to either pass pos or kw or both to the function"
+                )
+        else:
+            raise Exception("MFQR do please call the function properly")
+        return inferred_name
+
+    # Maybe rename it to derive
+    def resolve(self, expr: Expr, name: Optional[str] = None, iserr: bool = False):
+        """As in '(of something seen at a distance) turn into a different form when seen more clearly:
+        ex. the orange light resolved itself into four roadwork lanterns'"""
+
+        new_var = self._infer_name(name=name, kw="expr", pos=0)  # type: ignore
+
+        function_data, err_function_data = self._retrieve_params(expr=expr)
 
         self.data[new_var] = self._expr_to_np(expr=expr)(**function_data)
         if not iserr:
             if err_function_data:
                 err_expr = self._error_func(expr=expr)
                 err_function_data = {
-                    sym.name: err_function_data[sym.name]
+                    sym.name: err_function_data[sym.name]  # type: ignore
                     for sym in err_expr.free_symbols
                 }
                 self.data[self._err_of(new_var)] = self._expr_to_np(expr=err_expr)(
@@ -693,62 +719,18 @@ class Project:
     def apply_df(
         self,
         expr: Expr,
-        infer: bool | None = None,
         name: str | None = None,
         errors: bool = False,
     ) -> DataFrameLike:
         """Uses expr and internal data to calculate the value described by expr"""
+        new_var = self._infer_name(name=name, kw="expr", pos=0)  # type: ignore
 
-        # def varnameis(v):
-        #     d = globals()
-        #     return [k for k in d if d[k] == v]
+        function_data, _ = self._retrieve_params(expr=expr)
 
-        # def varname(v, scope=None):
-        #     d = globals() if not scope else vars(scope)
-        #     return [k for k in d if d[k] == v]
-
-        if infer is None:
-            infer = self._infer
-
-        params = list()
-        if infer:
-            # nice hack which finds the name of the parameters which called this function
-            func_name = sys._getframe().f_code.co_name
-            line_of_code = inspect.stack()[1][4][0]  # type: ignore
-            reg = func_name + r"\((?P<params>.+)\)"
-            match = re.search(reg, line_of_code)
-            params = match.group("params").split(",")  # type: ignore
-
-        if name is not None:
-            params[0] = name
-        # print(newvar.split("(")[1].split(")")[0])
-        # frame = inspect.stack()[1][0]
-        # while name not in frame.f_locals:
-        # frame = frame.f_back
-        # if frame is None:
-        # return None
-        # return frame.f_locals[name]
-        # print(varnameis(expr))
-        function_data = dict()
-        if hasattr(expr, "lhs"):
-            for var in expr.free_symbols:
-                var = str(var)
-                if var is not expr.lhs:  # type: ignore
-                    series = self.data[var]
-                    function_data[var] = series.to_numpy()
-        else:
-            for var in expr.free_symbols:
-                var = str(var)
-                series = self.data[var]
-                function_data[var] = series.to_numpy()
-
-        if params:
-            self.data[params[0]] = self._expr_to_np(expr)(**function_data)
-            # TODO Add or reset definition of variable using f_locals no like sympy does
-            simp.var(params[0])
-            return self.data[params[0]]
-        else:
-            return self._expr_to_np(expr)(**function_data)
+        self.data[new_var] = self._expr_to_np(expr)(**function_data)
+        # TODO Add or reset definition of variable using f_locals no like sympy does
+        # simp.var(new_var)
+        return self.data[new_var]
 
     def apply_df_err(self, expr: Expr) -> DataFrameLike:
         """Uses expr and internal data to calculate the error described by expr"""
