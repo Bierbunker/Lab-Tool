@@ -28,6 +28,7 @@ from .helpers import round_up
 from pathlib import Path
 from .LatexPrinter import latex
 import labtool_ex2.symbol as s
+from pandas._typing import AnyArrayLike
 
 # from .symbol import _custom_var
 
@@ -40,6 +41,7 @@ from matplotlib.legend import Legend
 matplotlib.use("Agg")
 from matplotlib.legend import _get_legend_handles_labels  # noqa
 import matplotlib.pyplot as plt  # noqa
+from .dtype import UfloatDtype
 
 
 DataFrameLike = UArrayLike = ItDepends = Any
@@ -84,6 +86,7 @@ class Project:
             plt.rcParams.update(rcsettings)
 
             p = Path(f"./Output/{name}/")
+            self._output_dir = f"./Output/{name}"
             p.mkdir(parents=True, exist_ok=True)
 
         # inject variables into global namespace can be improved if necessary however sympy does the same thing
@@ -113,6 +116,14 @@ class Project:
     #     print(x)
 
     # func()
+    @property
+    def output_dir(self):
+        """The output_dir property."""
+        return self._output_dir
+
+    @output_dir.setter
+    def output_dir(self, value):
+        self._output_dir = value
 
     def __str__(self) -> str:
         return f"""This is the [self.name] Project \n
@@ -164,7 +175,7 @@ class Project:
                     # add it to the sem
                     sem = filtered_vardata.sem()
                     sem = sem.fillna(sem.max())
-                    sem.name = rf"d{var}"
+                    sem.name = self._err_of(var)
                     if use_min:
                         df = mean.to_frame()
                         df[std.name] = std.min()
@@ -305,9 +316,10 @@ class Project:
             rf"Histogramm von ${name}$: $\mu={ser.mean()}$, $\sigma={round_up(ser.std(), 4)}$"
         )
         fig.tight_layout()
-        plt.savefig("histo.png")
+        plt.savefig(self.output_dir + "histo.png")
         with open(
-            f"../data/histo_data_{ser.name}_mess_nr_{self.load_data_counter}", "w"
+            self.output_dir + f"histo_data_{ser.name}_mess_nr_{self.load_data_counter}",
+            "w",
         ) as tf:
             tf.write(ser.rename(rf"${ser.name}$").to_latex(escape=False))
 
@@ -330,8 +342,9 @@ class Project:
 
         """
         colnames = list()
+        err_prefix = self._err_of("")
         for colname in df.columns:
-            if colname[0] == "d" and colname[1:] in self.gm:
+            if colname[0] == err_prefix and colname[1:] in self.gm:
                 unit = " / " + self.gv[colname[1:]]
                 colname = self.gm[colname[1:]]
                 colnames.append(r"$\Delta " + colname + "$" + unit)
@@ -341,8 +354,8 @@ class Project:
                 colname = self.gm[colname]
                 colnames.append("$" + colname + "$" + unit)
                 continue
-            if "d" in colname and "\\" not in colname:
-                colname = colname.replace("d", "\\Delta ")
+            if err_prefix in colname and "\\" not in colname:
+                colname = colname.replace(err_prefix, "\\Delta ")
             if len(colname) > 1 and "\\" not in colname:
                 colname = "\\" + colname
 
@@ -351,10 +364,10 @@ class Project:
 
         df.columns = colnames
         if name:
-            with open(f"./Output/{self.name}/messreihe_{name}.tex", "w") as tf:
+            with open(self.output_dir + f"messreihe_{name}.tex", "w") as tf:
                 tf.write(df.to_latex(escape=False))
         else:
-            with open(f"./Output/{self.name}/messreihe_{df.name}.tex", "w") as tf:
+            with open(self.output_dir + f"messreihe_{df.name}.tex", "w") as tf:
                 tf.write(df.to_latex(escape=False))
 
     def print_ftable(
@@ -370,8 +383,9 @@ class Project:
         output = io.StringIO()
 
         colnames = list()
+        err_prefix = self._err_of("")
         for colname in df.columns:
-            if colname[0] == "d" and colname[1:] in self.gm:
+            if colname[0] == err_prefix and colname[1:] in self.gm:
                 unit = " / " + self.gv[colname[1:]]
                 colname = self.gm[colname[1:]]
                 colnames.append(r"{{{$\Delta " + colname + "$" + unit + "}}}")
@@ -381,8 +395,8 @@ class Project:
                 colname = self.gm[colname]
                 colnames.append("{{{$" + colname + "$" + unit + "}}}")
                 continue
-            if "d" in colname and "\\" not in colname:
-                colname = colname.replace("d", "\\Delta ")
+            if err_prefix in colname and "\\" not in colname:
+                colname = colname.replace(err_prefix, "\\Delta ")
             if len(colname) > 1 and "\\" not in colname:
                 colname = "\\" + colname
 
@@ -438,10 +452,10 @@ class Project:
         # Write footer
         # output.write("\\end{tabular}")
         if name:
-            with open(f"./Output/{self.name}/messreihe_{name}.tex", "w") as tf:
+            with open(self.output_dir + f"messreihe_{name}.tex", "w") as tf:
                 tf.write(output.getvalue())
         else:
-            with open(f"./Output/{self.name}/messreihe_{df.name}.tex", "w") as tf:
+            with open(self.output_dir + f"messreihe_{df.name}.tex", "w") as tf:
                 tf.write(output.getvalue())
         # return output.getvalue()
 
@@ -554,69 +568,78 @@ class Project:
 
         return ax
 
-    def plot_data(
+    def _add_error(
         self,
         axes: plt.Axes,
-        x: str,
-        y: str,
-        label: str,
-        style: str = "r",
-        errors: bool = False,
-    ) -> None:
-        raw_x = self.data[x]
-        raw_y = self.data[y]
-        axes = self._set_x_y_label(ax=axes, x=x, y=y, color=style)
-
-        if errors:
-            errs = dict()
+        raw_x: pandas.Series,
+        raw_y: pandas.Series,
+        x_name: str,
+        y_name: str,
+    ):
+        errs = dict()
+        if isinstance(raw_x.dtype, UfloatDtype):
+            errs["xerr"] = raw_x.u.s
+        else:
             try:
-                name = "d" + x
+                name = self._err_of(x_name)
                 errs["xerr"] = self.data[name].values
             except Exception as e:
-                print(f"No xerr for {x} found")
+                print(f"No xerr for {x_name} found")
+
+        if isinstance(raw_y.dtype, UfloatDtype):
+            errs["xerr"] = raw_y.u.s
+        else:
             try:
-                name = "d" + y
+                name = self._err_of(y_name)
                 errs["yerr"] = self.data[name].values
             except Exception as e:
-                print(f"No yerr for {y} found")
-            axes.errorbar(raw_x, raw_y, fmt="none", capsize=3, **errs)
+                print(f"No yerr for {y_name} found")
+        axes.errorbar(raw_x, raw_y, fmt="none", capsize=3, **errs)
 
-        axes.scatter(
-            raw_x,
-            raw_y,
-            c=style,
-            marker=".",
-            s=39.0,
-            label=label,
-        )
+    def _parse_input(
+        self,
+        x: Union[str, s.Symbol, DataFrameLike],
+    ) -> tuple[pandas.Series, str]:
+        if isinstance(x, s.Symbol):
+            raw_x = x.data
+            x_name = x.name
+        elif isinstance(x, str):
+            raw_x = self.data[x]
+            x_name = x
+        elif isinstance(x, pandas.Series):
+            raw_x = x
+            x_name = x.name
+        else:
+            raise Exception("Unsupported type")
+        return (raw_x, x_name)  # type: ignore
 
-        # axes.legend(loc=0)
+    def _err_of(self, x: Union[str, s.Symbol, DataFrameLike]) -> str:
+        if isinstance(x, s.Symbol):
+            name = x.name
+        elif isinstance(x, str):
+            name = x
+        elif isinstance(x, pandas.Series):
+            name = x.name
+        else:
+            raise Exception("Unsupported type")
+        return f"d{name}"
 
     def _expr_to_np(self, expr: Expr) -> Callable:
         """Converts a Sympy Expression to a numpy calculable function"""
         print(tuple(expr.free_symbols))
         return simp.lambdify(tuple(expr.free_symbols), expr, "numpy")
 
+    def inject_err(self, expr: Expr, name: Optional[str] = None):
+        """This function is only for readability of the finished code"""
+        self.resolve(expr, name, iserr=True)
+
     # Maybe rename it to derive
-    def resolve(self, expr: Expr, name: Optional[str] = None):
+    def resolve(self, expr: Expr, name: Optional[str] = None, iserr: bool = False):
         """As in '(of something seen at a distance) turn into a different form when seen more clearly:
         ex. the orange light resolved itself into four roadwork lanterns'"""
         notfound = list()
         function_data = dict()
-        # print(expr.free_symbols)
-        # print(self.data.columns)
-        for var in expr.free_symbols:
-            if isinstance(var, s.Symbol):
-                if var.name not in self.data.columns:
-                    notfound.append(var.name)
-                    continue
-
-                function_data[var.name] = var.data.to_numpy()  # type:ignore
-            else:
-                print("ohno")
-
-        if notfound:
-            raise Exception(f"Data for the following variables are missing: {notfound}")
+        err_function_data = dict()
 
         if name is None:
             func_name = sys._getframe().f_code.co_name
@@ -627,7 +650,38 @@ class Project:
             new_var = params[0]
         else:
             new_var = name
+        # print(expr.free_symbols)
+        # print(self.data.columns)
+        for var in expr.free_symbols:
+            if isinstance(var, s.Symbol):
+                if var.name not in self.data.columns:
+                    notfound.append(var.name)
+                    continue
+                if not isinstance(var.data.dtype, UfloatDtype):
+                    err_function_data[var.name] = var.data.to_numpy()  # type:ignore
+                    err_function_data[self._err_of(var.name)] = self.data[
+                        self._err_of(var.name)
+                    ].to_numpy()  # type:ignore
+
+                function_data[var.name] = var.data.to_numpy()  # type:ignore
+            else:
+                print("ohno")
+
+        if notfound:
+            raise Exception(f"Data for the following variables are missing: {notfound}")
+
         self.data[new_var] = self._expr_to_np(expr=expr)(**function_data)
+        if not iserr:
+            if err_function_data:
+                err_expr = self._error_func(expr=expr)
+                err_function_data = {
+                    sym.name: err_function_data[sym.name]
+                    for sym in err_expr.free_symbols
+                }
+                self.data[self._err_of(new_var)] = self._expr_to_np(expr=err_expr)(
+                    **err_function_data
+                )
+
         return s._custom_var([new_var], project=self)
         # TODO use physipy for unit translation and calculation so that units are automatically calculated
 
@@ -713,15 +767,17 @@ class Project:
         def gradient(f, vs):
             return Matrix([f]).jacobian(vs)
 
-        e_func = Expr()
-        # e_func = 0
-        errs = " ".join([f"d{s}" for s in vs])
+        e_func = 0  # type: ignore
+        errs = " ".join([self._err_of(s) for s in vs])
         er = simp.symbols(errs)
         if not isinstance(er, Iterable):
             er = [er]
         for c, s in zip(gradient(expr, vs), er):
-            e_func = e_func + abs(c) * s
+            e_func = e_func + abs(c) * s  # type: Expr
+
         return e_func
+
+    # TODO load error function
 
     def find_min_sign_changes(self, df: DataFrameLike, identifier) -> DataFrameLike:
         """Operation on data column <identifier> find places where a sign flip happend"""
@@ -787,54 +843,82 @@ class Project:
         print(phase)
         return (mag, phase)
 
+    def plot_data(
+        self,
+        axes: plt.Axes,
+        x: Union[str, s.Symbol, DataFrameLike],
+        y: Union[str, s.Symbol, DataFrameLike],
+        label: str,
+        style: str = "r",
+        errors: bool = False,
+    ) -> None:
+        raw_x, x_name = self._parse_input(x)
+        raw_y, y_name = self._parse_input(y)
+        axes = self._set_x_y_label(ax=axes, x=x_name, y=y_name, color=style)
+
+        if errors:
+            self._add_error(
+                axes=axes, raw_x=raw_x, raw_y=raw_y, x_name=x_name, y_name=y_name
+            )
+
+        axes.scatter(
+            raw_x,
+            raw_y,
+            c=style,
+            marker=".",
+            s=39.0,
+            label=label,
+        )
+
     def plot_function(
         self,
         axes: plt.Axes,
-        x: str,
-        y: str,
+        x: Union[str, s.Symbol, DataFrameLike],
         expr: Expr,
         label: str,
-        errors: bool = False,
+        y: Optional[Union[str, s.Symbol, DataFrameLike]] = None,
         style: str = "r",
+        errors: bool = False,
+        *args,
+        **kwargs,
     ):
-        # fig, ax = self.get_fig_ax(figure, toggle_add_subplot)
-        x_data = self.data[x]
-        # x_continues_plot_data = np.linspace(x_data.min(), x_data.max(), 1000)
-        # function_data = dict()
-        # print(str(expr.free_symbols))
-        # for var in expr.free_symbols:
-        #     var = str(var)
-        #     if var is not x and var is not expr.lhs:
-        #         series = self.data[var]
-        #         function_data[var] = series.to_numpy()
-        # function_data[x] = x_continues_plot_data
-        y_data = self.apply_df(expr)
-        # p22nt(y_data)
+        raw_x, x_name = self._parse_input(x)
+        if y is not None:
+            raw_y, y_name = self._parse_input(y)
+        else:
+            # nice hack which finds the name of the parameters which called this function
+            func_name = sys._getframe().f_code.co_name
+            line_of_code = inspect.stack()[1][4][0]  # type: ignore
+            reg = func_name + r"\((?P<params>.+)\)"
+            match = re.search(reg, line_of_code)
+            params = match.group("params").split(",")  # type: ignore
+            y_name = params[2]
+            print(y_name)
 
-        # try:
-        self._set_x_y_label(axes, x, y)
-        # except AttributeError as e:
-        #     self.set_x_y_label(axes, x, str(expr))
+        axes = self._set_x_y_label(ax=axes, x=x_name, y=y_name, color=style)
+
+        raw_y = self.apply_df(expr)
+
+        if errors:
+            self._add_error(
+                axes=axes, raw_x=raw_x, raw_y=raw_y, x_name=x_name, y_name=y_name
+            )
 
         axes.plot(
-            x_data,
-            y_data,
-            linestyle="-",
-            color=style,
-            label=label,
+            raw_x, raw_y, linestyle="-", color=style, label=label, *args, **kwargs
         )
-        if errors:
-            if f"d{y}" in self.data:
-                dely = self.data[f"d{y}"]
-                axes.fill_between(
-                    x_data, y_data - dely, y_data + dely, color=style, alpha=0.4
-                )
+        # if errors:
+        #     if self._err_of(y) in self.data:
+        #         dely = self.data[self._err_of(y)]
+        #         axes.fill_between(
+        #             raw_x, raw_y - dely, raw_y + dely, color=style, alpha=0.4
+        #         )
 
     def plot_fit(
         self,
         axes: plt.Axes,
-        x: str,
-        y: str,
+        x: Union[str, s.Symbol, DataFrameLike],
+        y: Union[str, s.Symbol, DataFrameLike],
         eqn,
         style: str = "r",
         label: str = "fit",
@@ -860,18 +944,16 @@ class Project:
         granularity is the granularity of the continues x data for the fit curve
         gof flag if goodness of fit should be printed
         """
-        x_data = self.data[x]
-        y_data = self.data[y]
-        print(eqn)
-        x_continues_plot_data = np.linspace(x_data.min(), x_data.max(), granularity)
-        print(x_continues_plot_data)
-        y_fit = y_data.values.reshape(1, -1)
+        raw_x, x_name = self._parse_input(x)
+        raw_y, y_name = self._parse_input(y)
+        x_continues_plot_data = np.linspace(min(raw_x), max(raw_x), granularity)
+        y_fit = raw_y.values.reshape(1, -1)  # type: ignore
         independent_vars = dict()
         cont_independent_vars = dict()
         if hasattr(eqn, "lhs"):
             eqn = eqn[1]
         if use_all_known:
-            vars = [str(sym) for sym in eqn.free_symbols if str(sym) != y]
+            vars = [str(sym) for sym in eqn.free_symbols if str(sym) != y_name]
             mod = ExpressionModel(
                 str(eqn),
                 independent_vars=vars,
@@ -884,18 +966,18 @@ class Project:
         else:
             mod = ExpressionModel(
                 str(eqn),
-                independent_vars=[x],
+                independent_vars=[x_name],
             )
-            x_fit = x_data.values.reshape(1, -1)
-            independent_vars[x] = x_fit
-            cont_independent_vars[x] = np.linspace(
-                x_data.min(), x_data.max(), granularity
+            x_fit = raw_x.values.reshape(1, -1)  # type: ignore
+            independent_vars[x_name] = x_fit
+            cont_independent_vars[x_name] = np.linspace(
+                min(raw_x), max(raw_x), granularity
             )
 
         if guess:
             pars = mod.make_params(**guess)
         else:
-            # pars = mod.guess(raw_y, x=raw_x)
+            # pars = mod.guess(raw_y, x_name=raw_x)
             # TODO custom error needs to be implemented
             print("No guess was passed")
             raise Exception
@@ -908,8 +990,8 @@ class Project:
         # print(independent_vars)
         # print(pars)
 
-        if f"d{y}" in self.data:
-            weights = 1 / (self.data[f"d{y}"])
+        if self._err_of(y_name) in self.data:
+            weights = 1 / (self.data[self._err_of(y_name)])
             weights = weights.values.reshape(1, -1)
             out = mod.fit(
                 y_fit, pars, weights=weights, scale_covar=False, **independent_vars
@@ -917,7 +999,7 @@ class Project:
         else:
             # out = mod.fit(y_fit, pars,scale_covar=False, **independent_vars)
             out = mod.fit(y_fit, pars, **independent_vars)
-        axes = self._set_x_y_label(ax=axes, x=x, y=y)
+        axes = self._set_x_y_label(ax=axes, x=x_name, y=y_name)
         if add_fit_params:
             paramstr = "\n".join(
                 [
@@ -929,27 +1011,9 @@ class Project:
             if gof:
                 paramstr += "\n" + rf"$\chi^2 = {out.chisqr}$ "
                 paramstr += "\n" + rf"$\chi^2_{{\nu}} = {out.redchi}$ "
-            #            for i, (name, param) in enumerate(out.params.items()):
-            #                uparam = ufloat(param.value, param.stderr)
-            #                paramstr += rf"${self.gm[name]} = {uparam}$ " + self.gv[name] + "\n"
-            #   axes.text(
-            #       s=rf"${self.gm[name]} = {uparam}$ " + self.gv[name],
-            #       bbox={"facecolor": style, "alpha": 0.75},
-            #       # bbox={"facecolor": "#616161", "alpha": 0.85},
-            #       x=(max(x_data) - min(x_data)) / 100 * (5 + offset[0]) + min(x_data),
-            #       y=(max(y_data) - min(y_data)) * (offset[1] / 100 + (i + 1) / 13)
-            #       + min(y_data),
-            #       fontsize=10,
-            #   )
 
-            axes.text(
-                s=paramstr,
-                bbox={"facecolor": style, "alpha": 0.60},
-                # bbox={"facecolor": "#616161", "alpha": 0.85},
-                x=(max(x_data) - min(x_data)) / 100 * (5 + offset[0]) + min(x_data),
-                y=(max(y_data) - min(y_data)) * (offset[1] / 100) + min(y_data),
-                fontsize=10,
-            )
+            self.add_text(axes=axes, text=paramstr, offset=offset)
+
         resp = np.array(out.eval(**cont_independent_vars))
         print(resp)
         # prevl = 0.5790
@@ -973,32 +1037,44 @@ class Project:
             x_continues_plot_data, resp - dely, resp + dely, color=style, alpha=0.4
         )
         axes.plot(x_continues_plot_data, resp, style, label=f"{label} fit")
-        # axes.legend(loc=0)
         print(out.fit_report(min_correl=0.25))
 
     def savefig(self, name: str, clear: bool = True) -> Optional[plt.Axes]:
         """Use this method to save your figures"""
-        self.figure.savefig(f"./Output/{self.name}/" + name, dpi=400)
+        self.figure.savefig(self.output_dir + name, dpi=400)
         if clear:
             self.figure.clear()
             ax = self.figure.add_subplot()
             return ax
 
     def add_text(
-        self, axes: plt.Axes, keyvalue: dict[str, Any], offset: tuple = (0, 0)
+        self,
+        axes: plt.Axes,
+        keyvalue: Optional[dict[str, Any]] = None,
+        text: Optional[str] = None,
+        offset: Union[tuple[int, int], list[int]] = (0, 0),
     ):
-        """Write text inside on an axes"""
+        """Adds parameters as text on an axes"""
         # maxes = max([_.zorder for _ in axes.get_children()])
         # print(maxes)
         maxes = axes
-        for i, (name, param) in enumerate(keyvalue.items()):
-            uparam = param
-            xmin, xmax = maxes.get_xlim()
-            ymin, ymax = maxes.get_ylim()
+        xmin, xmax = maxes.get_xlim()
+        ymin, ymax = maxes.get_ylim()
+        if keyvalue is not None:
+            for i, (name, param) in enumerate(keyvalue.items()):
+                uparam = param
+                maxes.text(
+                    s=rf"${self.gm[name]} = {uparam}$ " + self.gv[name],
+                    bbox={"facecolor": "#616161", "alpha": 0.85},
+                    x=(xmax - xmin) / 100 * (5 + offset[0]) + xmin,
+                    y=(ymax - ymin) * (offset[1] / 100 + (i + 1) / 7) + ymin,
+                    fontsize=10,
+                )
+        if text is not None:
             maxes.text(
-                s=rf"${self.gm[name]} = {uparam}$ " + self.gv[name],
+                s=text,
                 bbox={"facecolor": "#616161", "alpha": 0.85},
                 x=(xmax - xmin) / 100 * (5 + offset[0]) + xmin,
-                y=(ymax - ymin) * (offset[1] / 100 + (i + 1) / 7) + ymin,
+                y=(ymax - ymin) * (offset[1] / 100 + 1 / 7) + ymin,
                 fontsize=10,
             )
