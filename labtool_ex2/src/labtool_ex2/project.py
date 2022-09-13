@@ -744,6 +744,9 @@ class Project:
 
     def _error_func(self, expr: Expr) -> Expr:
         """Uses expr and find its groessenunsicherheits methoden representation"""
+        return self._groessen_propagation(expr=expr)
+
+    def _groessen_propagation(self, expr: Expr) -> Expr:
         vs = list(ordered(expr.free_symbols))
 
         def gradient(f, vs):
@@ -756,6 +759,22 @@ class Project:
             er = [er]
         for c, s in zip(gradient(expr, vs), er):
             e_func = e_func + abs(c) * s  # type: Expr
+
+        return e_func
+
+    def _gauss_propagation(self, expr: Expr) -> Expr:
+        vs = list(ordered(expr.free_symbols))
+
+        def gradient(f, vs):
+            return Matrix([f]).jacobian(vs)
+
+        e_func = 0  # type: ignore
+        errs = " ".join([self._err_of(s) for s in vs])
+        er = simp.symbols(errs)
+        if not isinstance(er, Iterable):
+            er = [er]
+        for c, s in zip(gradient(expr, vs), er):
+            e_func = e_func + c**2 * s  # type: Expr
 
         return e_func
 
