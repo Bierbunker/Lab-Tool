@@ -49,17 +49,19 @@ def test_oszi_protokoll():
     print(P.data)
 
     # Ladekurve Spannung 1
-    P.data = P.data[P.data["t"].between(7.5999773e-03, 1.6840045e-02, inclusive=False)]
+    P.data = P.data[
+        P.data["t"].between(7.5999773e-03, 1.6840045e-02, inclusive="neither")
+    ]
     P.data["t"] = P.data["t"] - P.data["t"].values[0]
     I = UR / R
     dUC = 0.03 * UC + 0.1 * 0.074 + 0.001
     dUR = 0.03 * UR + 0.1 * 0.142 + 0.001
-    P.inject_err(dUC)
+    P.inject_err(dUC)  # type: ignore
     P.inject_err(dUR)
     P.resolve(I)
     print(P.data)
     lI = simp.log(-I + 1.001 * I.data.max())
-    lUC = simp.log(UC - 1.001 * UC.data.min())
+    lUC = simp.log(UC - 1.001 * UC.data.min())  # type: ignore
     P.resolve(lI)
     P.resolve(lUC)
     print(P.data[["lI", "lUC"]])
@@ -129,7 +131,7 @@ def test_oszi_protokoll():
     P.figure.set_tight_layout(True)
     ax = P.savefig(f"entladekurve.png", clear=True)
     # Linearisierung Entladekurve
-    P.data = P.data[P.data["t"].between(0, 0.004, inclusive=False)]
+    P.data = P.data[P.data["t"].between(0, 0.004, inclusive="neither")]
     P.plot_data(
         ax,  # type: ignore
         t,
@@ -193,7 +195,7 @@ def test_oszi_protokoll():
     P.vload()
     P.data = P.dfs["oszi_versuch"][
         P.dfs["oszi_versuch"]["t"].between(
-            -2.2800101e-03, 7.5999772e-03, inclusive=False
+            -2.2800101e-03, 7.5999772e-03, inclusive="neither"
         )
     ]
     P.data["t"] = P.data["t"] - P.data["t"].values[0]
@@ -275,7 +277,7 @@ def test_oszi_protokoll():
     ax = P.savefig(f"ladekurve.png")
 
     # Linearisierung Ladekurve
-    P.data = P.data[P.data["t"].between(0, 0.004, inclusive=False)]
+    P.data = P.data[P.data["t"].between(0, 0.004, inclusive="neither")]
     # lI = -t/tau + simp.log(I0)
     lI = -t / tau + lI0
     lUC = -t / tau + lU0
