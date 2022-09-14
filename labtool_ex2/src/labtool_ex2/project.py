@@ -328,7 +328,7 @@ class Project:
 
     def print_expr(self, expr: Expr):
         """Prints the expression in latex format and substitutes the variables according to the mapping"""
-        print(latex(expr=expr, symbol_names=self.gm))
+        latex(expr=expr, symbol_names=self.gm)
 
     # def print_table(self, expr: Expr):
     #     pass
@@ -504,7 +504,7 @@ class Project:
     def _find_axes(self, xlabel: Optional[str] = None, ylabel: Optional[str] = None):
         if xlabel and ylabel:
             for ax in self.figure.get_axes():  # type:ignore
-                print(f"testing {ax.get_xlabel()} and {ax.get_ylabel()}")
+                # print(f"testing {ax.get_xlabel()} and {ax.get_ylabel()}")
                 if (ax.get_xlabel() == xlabel or ax.get_xlabel() == "") and (
                     ax.get_ylabel() == ylabel or ax.get_ylabel() == ""
                 ):
@@ -1080,7 +1080,7 @@ class Project:
             self.add_text(axes=axes, text=paramstr, offset=offset)
 
         resp = np.array(out.eval(**cont_independent_vars))
-        print(resp)
+        # print(resp)
         # prevl = 0.5790
         # prevn = 1.78560969693395
         # prevd = 1

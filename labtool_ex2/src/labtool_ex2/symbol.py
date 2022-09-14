@@ -112,7 +112,7 @@ def _custom_var(names: list[str], project: p.Project, **args):  # noqa
 
     """
 
-    print(names)
+    # print(names)
 
     def traverse(symbols, frame):
         """Recursively inject symbols to the global namespace."""
