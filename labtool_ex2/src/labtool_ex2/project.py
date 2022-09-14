@@ -92,29 +92,12 @@ class Project:
         s._custom_var(list(global_variables), project=self)
         # simp.var(list(global_variables), cls=Symbol, df=self.data)
 
-    # import sys
-    # import ctypes
-
     def vload(self, names: Optional[list[str]] = list(), **args):
         if names:
             s._custom_var(names=names, project=self, **args)
         else:
             s._custom_var(names=list(self.gv), project=self, **args)
 
-    # def hack():
-    #     # Get the frame object of the caller
-    #     frame = sys._getframe(1)
-    #     frame.f_locals['x'] = "hack!"
-    #     # Force an update of locals array from locals dict
-    #     ctypes.pythonapi.PyFrame_LocalsToFast(ctypes.py_object(frame),
-    #                                           ctypes.c_int(0))
-
-    # def func():
-    #     x = 1
-    #     hack()
-    #     print(x)
-
-    # func()
     @property
     def output_dir(self):
         """The output_dir property."""
