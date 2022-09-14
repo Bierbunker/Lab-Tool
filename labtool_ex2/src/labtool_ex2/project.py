@@ -28,7 +28,6 @@ from .helpers import round_up, split_into_args_kwargs
 from pathlib import Path
 from .LatexPrinter import latex
 import labtool_ex2.symbol as s
-from pandas._typing import AnyArrayLike
 
 # from .symbol import _custom_var
 
@@ -96,7 +95,7 @@ class Project:
     # import sys
     # import ctypes
 
-    def vload(self, names: Optional[list[str]], **args):
+    def vload(self, names: Optional[list[str]] = list(), **args):
         if names:
             s._custom_var(names=names, project=self, **args)
         else:
@@ -609,6 +608,8 @@ class Project:
         elif isinstance(x, pandas.Series):
             raw_x = x
             x_name = x.name
+        # elif issubclass(x,Expr):
+        #     self._infer_name(kw=)
         else:
             raise Exception("Unsupported type")
         return (raw_x, x_name)  # type: ignore
@@ -626,11 +627,13 @@ class Project:
 
     def _expr_to_np(self, expr: Expr) -> Callable:
         """Converts a Sympy Expression to a numpy calculable function"""
-        print(tuple(expr.free_symbols))
+        # print(tuple(expr.free_symbols))
         return simp.lambdify(tuple(expr.free_symbols), expr, "numpy")
 
+    # maybe rename to ingest instead of inject
     def inject_err(self, expr: Expr, name: Optional[str] = None):
         """This function is only for readability of the finished code"""
+        name = self._infer_name(name=name, kw="expr", pos=0)  # type: ignore
         self.resolve(expr, name, iserr=True)
 
     def _retrieve_params(self, expr: Expr):
@@ -643,10 +646,13 @@ class Project:
                     notfound.append(var.name)
                     continue
                 if not isinstance(var.data.dtype, UfloatDtype):
-                    err_function_data[var.name] = var.data.to_numpy()  # type:ignore
-                    err_function_data[self._err_of(var.name)] = self.data[
-                        self._err_of(var.name)
-                    ].to_numpy()  # type:ignore
+                    try:
+                        err_function_data[self._err_of(var.name)] = self.data[
+                            self._err_of(var.name)
+                        ].to_numpy()  # type:ignore
+                        err_function_data[var.name] = var.data.to_numpy()  # type:ignore
+                    except KeyError:
+                        pass
 
                 function_data[var.name] = var.data.to_numpy()  # type:ignore
             else:
@@ -658,21 +664,68 @@ class Project:
 
     # should be probably move to helpers
     def _infer_name(
-        self, name: str, kw: Optional[str] = None, pos: Optional[int] = None
+        self,
+        name: Optional[str] = None,
+        kw: Optional[str] = None,
+        pos: Optional[int] = None,
     ) -> str:
         if name is not None:
             return name
 
         inferred_name = ""
-        func_name = sys._getframe().f_back.f_code.co_name  # type: ignore
-        line_of_code = inspect.stack()[2][4][0]  # type: ignore
+
+        from inspect import currentframe
+
+        func_name = currentframe().f_back.f_code.co_name  # type: ignore
+        # pint(dir(currentframe().f_back.f_code))
+        # print(func_name)
+        # line_of_code = inspect.stack()[2][4][0]  # type: ignore
+        import linecache
+
+        frame = currentframe().f_back.f_back  # type: ignore
+        lineno = frame.f_lineno  # type: ignore
+        co = frame.f_code  # type: ignore
+        filename = co.co_filename
+        name = co.co_name
+        complete_function = ""
+        linecache.checkcache(filename)
+        line = linecache.getline(filename, lineno, frame.f_globals)  # type: ignore
+        complete_function = complete_function + line.split("#")[0].strip()
+        while ")" not in line:
+            # print(line)
+            lineno = lineno + 1
+            line = linecache.getline(filename, lineno, frame.f_globals)  # type: ignore
+            if not line.strip().startswith("#"):
+                reg = r"(?P<params>(([^\W0-9]\w*)+(=(.)+)?,)+)"
+                match = re.search(reg, line)
+                if match is not None:
+                    complete_function = (
+                        complete_function + match.group("params").strip()
+                    )
+
+        if ")" not in complete_function:
+            complete_function = complete_function + ")"
+
+        # complete_function = complete_function + line.split("#")[0].strip()
+        # if not line.strip().startswith("#"):
+        #     reg = r"(?P<params>(([^\W0-9]\w*)+(=(.)+)?,)+)"
+        #     match = re.search(reg, line)
+        #     if match is not None:
+        #         complete_function = complete_function + match.group("params").strip()
+        # print(complete_function)
+        # retVal =  '\n  File "%s", line %d, in %s' % (filename, lineno, name)
+        # if line:
+        #     retVal += "\n        " + line.strip()
+        # return retVal
         reg = func_name + r"\((?P<params>.+)\)"
-        match = re.search(reg, line_of_code)
+        match = re.search(reg, complete_function)
         if match is not None:
             # params = match.group("params").split(",")  # type: ignore
             # nargs, kwargs = eval(f'_args({match.group("params")})')
             nargs, kwargs = split_into_args_kwargs(match.group("params"))
-            if pos is not None:
+            # print(nargs)
+            # print(kwargs)
+            if pos is not None and len(nargs) > pos:
                 inferred_name = nargs[pos]  # type: ignore
             if kw is not None:
                 try:
@@ -802,7 +855,7 @@ class Project:
         # TODO remove t filter
         pz = self.find_min_sign_changes(self.data, identifier)[filter]
         pz = pz[pz.between(start, end)]
-        print(pz)
+        # print(pz)
         self.data = self.data[self.data[filter].between(start, end)]
         return pz
 
@@ -850,11 +903,21 @@ class Project:
         x: Union[str, s.Symbol, DataFrameLike],
         y: Union[str, s.Symbol, DataFrameLike],
         label: str,
+        *args,
         style: str = "r",
         errors: bool = False,
+        **kwargs,
     ) -> None:
-        raw_x, x_name = self._parse_input(x)
-        raw_y, y_name = self._parse_input(y)
+        if isinstance(x, Expr):
+            x_name = self._infer_name(kw="x", pos=1)
+            raw_x = self.data[x_name]
+        else:
+            raw_x, x_name = self._parse_input(y)
+        if isinstance(y, Expr):
+            y_name = self._infer_name(kw="y", pos=2)
+            raw_y = self.data[y_name]
+        else:
+            raw_y, y_name = self._parse_input(y)
         axes = self._set_x_y_label(ax=axes, x=x_name, y=y_name, color=style)
 
         if errors:
@@ -863,12 +926,7 @@ class Project:
             )
 
         axes.scatter(
-            raw_x,
-            raw_y,
-            c=style,
-            marker=".",
-            s=39.0,
-            label=label,
+            raw_x, raw_y, c=style, marker=".", s=39.0, label=label, *args, **kwargs
         )
 
     def plot_function(
@@ -883,18 +941,16 @@ class Project:
         *args,
         **kwargs,
     ):
-        raw_x, x_name = self._parse_input(x)
+
+        if isinstance(x, Expr):
+            x_name = self._infer_name(kw="x", pos=1)
+            raw_x = self.data[x_name]
+        else:
+            raw_x, x_name = self._parse_input(y)
         if y is not None:
             raw_y, y_name = self._parse_input(y)
         else:
-            # nice hack which finds the name of the parameters which called this function
-            func_name = sys._getframe().f_code.co_name
-            line_of_code = inspect.stack()[1][4][0]  # type: ignore
-            reg = func_name + r"\((?P<params>.+)\)"
-            match = re.search(reg, line_of_code)
-            params = match.group("params").split(",")  # type: ignore
-            y_name = params[2]
-            print(y_name)
+            y_name = self._infer_name(name=None, kw="expr", pos=2)  # type: ignore
 
         axes = self._set_x_y_label(ax=axes, x=x_name, y=y_name, color=style)
 
@@ -919,7 +975,7 @@ class Project:
         self,
         axes: plt.Axes,
         x: Union[str, s.Symbol, DataFrameLike],
-        y: Union[str, s.Symbol, DataFrameLike],
+        y: Union[str, s.Symbol, DataFrameLike, Expr],
         eqn,
         style: str = "r",
         label: str = "fit",
@@ -945,8 +1001,16 @@ class Project:
         granularity is the granularity of the continues x data for the fit curve
         gof flag if goodness of fit should be printed
         """
-        raw_x, x_name = self._parse_input(x)
-        raw_y, y_name = self._parse_input(y)
+        if isinstance(x, Expr):
+            x_name = self._infer_name(kw="x", pos=1)
+            raw_x = self.data[x_name]
+        else:
+            raw_x, x_name = self._parse_input(y)
+        if isinstance(y, Expr):
+            y_name = self._infer_name(kw="y", pos=2)
+            raw_y = self.data[y_name]
+        else:
+            raw_y, y_name = self._parse_input(y)
         x_continues_plot_data = np.linspace(min(raw_x), max(raw_x), granularity)
         y_fit = raw_y.values.reshape(1, -1)  # type: ignore
         independent_vars = dict()

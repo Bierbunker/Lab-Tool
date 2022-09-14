@@ -49,7 +49,8 @@ def split_into_args_kwargs(s: str) -> tuple[list[str], dict[str, str]]:
             val = val.strip()
             _kwargs[key] = val
             continue
-        _nargs.append(param)
+        if param:
+            _nargs.append(param)
     return _nargs, _kwargs
 
 

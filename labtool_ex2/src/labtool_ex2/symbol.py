@@ -27,7 +27,9 @@ class Symbol(SimpSymbol, NotIterable):
         obj._project = project  # type: ignore
         return obj
 
-    def __init__(self, name, project):
+    def __init__(self, name, project: Optional[p.Project] = None):
+        if project is None:
+            project = p.Project(None)
         self._project: p.Project
         super().__init__()
 
@@ -37,8 +39,8 @@ class Symbol(SimpSymbol, NotIterable):
         # try:
         return self._project.data[self.name]
 
-    def __len__(self) -> int:
-        return len(self.data)
+    # def __len__(self) -> int:
+    #     return len(self.data)
 
     # @property
     # def data(self) -> AnyArrayLike:
@@ -118,22 +120,22 @@ def _custom_var(names: list[str], project: p.Project, **args):  # noqa
             if isinstance(symbol, Basic):
                 frame.f_globals[symbol.name] = symbol  # type: ignore
                 # magic see https://stackoverflow.com/questions/34650744/modify-existing-variable-in-locals-or-frame-f-locals
-                if symbol.name in frame.f_locals:  # type: ignore
-                    import ctypes
+                # if symbol.name in frame.f_locals:  # type: ignore
+                import ctypes
 
-                    frame.f_locals.update({symbol.name: symbol})  # type: ignore
-                    ctypes.pythonapi.PyFrame_LocalsToFast(
-                        ctypes.py_object(frame), ctypes.c_int(0)
-                    )
+                frame.f_locals.update({symbol.name: symbol})  # type: ignore
+                ctypes.pythonapi.PyFrame_LocalsToFast(
+                    ctypes.py_object(frame), ctypes.c_int(0)
+                )
             elif isinstance(symbol, FunctionClass):
                 frame.f_globals[symbol.__name__] = symbol
-                if symbol.__name__ in frame.f_locals:  # type: ignore
-                    import ctypes
+                # if symbol.__name__ in frame.f_locals:  # type: ignore
+                import ctypes
 
-                    frame.f_locals.update({symbol.__name__: symbol})  # type: ignore
-                    ctypes.pythonapi.PyFrame_LocalsToFast(
-                        ctypes.py_object(frame), ctypes.c_int(0)
-                    )
+                frame.f_locals.update({symbol.__name__: symbol})  # type: ignore
+                ctypes.pythonapi.PyFrame_LocalsToFast(
+                    ctypes.py_object(frame), ctypes.c_int(0)
+                )
             else:
                 traverse(symbol, frame)
 
@@ -150,22 +152,22 @@ def _custom_var(names: list[str], project: p.Project, **args):  # noqa
         if syms is not None:
             if isinstance(syms, Basic):
                 frame.f_globals[syms.name] = syms  # type: ignore
-                if syms.name in frame.f_locals:  # type: ignore
-                    import ctypes
+                # if syms.name in frame.f_locals:  # type: ignore
+                import ctypes
 
-                    frame.f_locals.update({syms.name: syms})  # type: ignore
-                    ctypes.pythonapi.PyFrame_LocalsToFast(
-                        ctypes.py_object(frame), ctypes.c_int(0)
-                    )
+                frame.f_locals.update({syms.name: syms})  # type: ignore
+                ctypes.pythonapi.PyFrame_LocalsToFast(
+                    ctypes.py_object(frame), ctypes.c_int(0)
+                )
             elif isinstance(syms, FunctionClass):
                 frame.f_globals[syms.__name__] = syms  # type: ignore
-                if syms.__name__ in frame.f_locals:  # type: ignore
-                    import ctypes
+                # if syms.__name__ in frame.f_locals:  # type: ignore
+                import ctypes
 
-                    frame.f_locals.update({syms.__name__: syms})  # type: ignore
-                    ctypes.pythonapi.PyFrame_LocalsToFast(
-                        ctypes.py_object(frame), ctypes.c_int(0)
-                    )
+                frame.f_locals.update({syms.__name__: syms})  # type: ignore
+                ctypes.pythonapi.PyFrame_LocalsToFast(
+                    ctypes.py_object(frame), ctypes.c_int(0)
+                )
             else:
                 traverse(syms, frame)
     finally:
