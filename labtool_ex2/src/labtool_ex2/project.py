@@ -123,8 +123,8 @@ class Project:
         clean should not be touched if you don't know what you are doing contact max if raw data is need"""
         print("\n\nLoading Data from: " + str(path))
         if loadnew:
-            self.data.drop(self.data.index, inplace=True)
-            # self.data = pandas.DataFrame(data=None)
+            # self.data.drop(self.data.index, inplace=True)
+            self.data = pandas.DataFrame(data=None)
         df = pandas.read_csv(
             path, header=[0, 1], skipinitialspace=True  # type: ignore
         )  # type: DataFrame
@@ -813,7 +813,7 @@ class Project:
             x_name = self._infer_name(kw="x", pos=1)
             raw_x = self.data[x_name]
         else:
-            raw_x, x_name = self._parse_input(y)
+            raw_x, x_name = self._parse_input(x)
         if isinstance(y, Expr):
             y_name = self._infer_name(kw="y", pos=2)
             raw_y = self.data[y_name]
@@ -847,7 +847,7 @@ class Project:
             x_name = self._infer_name(kw="x", pos=1)
             raw_x = self.data[x_name]
         else:
-            raw_x, x_name = self._parse_input(y)
+            raw_x, x_name = self._parse_input(x)
         if y is not None:
             raw_y, y_name = self._parse_input(y)
         else:
@@ -906,7 +906,7 @@ class Project:
             x_name = self._infer_name(kw="x", pos=1)
             raw_x = self.data[x_name]
         else:
-            raw_x, x_name = self._parse_input(y)
+            raw_x, x_name = self._parse_input(x)
         if isinstance(y, Expr):
             y_name = self._infer_name(kw="y", pos=2)
             raw_y = self.data[y_name]
