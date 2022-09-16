@@ -268,4 +268,4 @@ def test_trafo_protokoll():
 
     ax.set_title(f"Leistungskurve am Lastwiderstand")
     P.ax_legend_all(loc=1)
-    ax = P.savefig(f"leistungskurve.png")
+    ax = P.savefig(f"leistungskurve.pdf")
