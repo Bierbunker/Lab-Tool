@@ -18,7 +18,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
-          sudo apt update && sudo apt install dvipng ghostscript texlive-fonts-recommended texlive-generic-recommended texlive-latex-base texlive-latex-extra texlive-latex-recommended texlive-publishers texlive-science texlive-xetex cm-super
+          sudo apt update && sudo apt install dvipng ghostscript texlive-fonts-recommended texlive-base texlive-latex-base texlive-latex-extra texlive-latex-recommended texlive-publishers texlive-science texlive-xetex cm-super
           python -m pip install --upgrade pip
           pip install flake8 pytest
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi

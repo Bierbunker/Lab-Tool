@@ -17,7 +17,7 @@ jobs:
         python-version: "3.10"
     - name: Generate Report
       run: |
-        sudo apt update && sudo apt install dvipng ghostscript texlive-fonts-recommended texlive-generic-recommended texlive-latex-base texlive-latex-extra texlive-latex-recommended texlive-publishers texlive-science texlive-xetex cm-super
+        sudo apt update && sudo apt install dvipng ghostscript texlive-fonts-recommended texlive-base texlive-latex-base texlive-latex-extra texlive-latex-recommended texlive-publishers texlive-science texlive-xetex cm-super
         pip install -e .
         pip install pytest
         pip install coverage
