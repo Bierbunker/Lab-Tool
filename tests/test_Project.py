@@ -98,6 +98,34 @@ def test_usymbol():
     assert hasattr(P.data, "summe")
 
 
+def test_no_difference_if_com_or_sep_calc():
+    gm = {
+        "t": r"t",
+        "tau": r"\tau",
+    }
+    gv = {
+        "t": r"\si{\second}",
+        "tau": r"\si{\second}",
+    }
+    P = Project(None, global_variables=gv, global_mapping=gm, font=13)
+    filepath = os.path.join(os.path.dirname(__file__), "./data/input/short_test.csv")
+    P.load_data(filepath)
+    P.data = P.data.u.com
+
+    summe = t + tau
+    P.resolve(summe)
+    temp = P.data
+    print(temp)
+    P.vload()
+    P.load_data(filepath, loadnew=True)
+
+    summe = t + tau
+    P.resolve(summe)
+    print(P.data)
+    print(temp.u.sep)
+    assert all(temp.u.sep == P.data)
+
+
 # test for adding ufloat array stuff
 # test_creation()
 # test_symbol()
