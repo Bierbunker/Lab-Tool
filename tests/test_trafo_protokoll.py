@@ -210,7 +210,7 @@ def test_trafo_protokoll():
     )
     P.plot_data(
         ax,
-        "R",
+        R,
         "PR",
         label="Gemessene Daten",
         style="r",
