@@ -58,6 +58,7 @@ class Project:
         infer: bool = True,
     ):
         self.name: Optional[str] = name
+        self._err_prefix: str = "d"
         # self.equations = dict()
         self.gm: dict[str, str] = global_mapping
         self.gv: dict[str, str] = global_variables
@@ -106,6 +107,15 @@ class Project:
     @output_dir.setter
     def output_dir(self, value):
         self._output_dir = value
+
+    @property
+    def err_prefix(self) -> str:
+        """The err_prefix property."""
+        return self._err_prefix
+
+    @err_prefix.setter
+    def err_prefix(self, value):
+        self._err_prefix = value
 
     def __str__(self) -> str:
         return f"""This is the [self.name] Project \n
@@ -234,78 +244,188 @@ class Project:
     # def print_table(self, expr: Expr):
     #     pass
 
-    def print_table(self, df: DataFrameLike, name: Optional[str] = None):
-        """Tries to export dataframe to latex table
+    # def print_table(self, df: DataFrameLike, name: Optional[str] = None):
+    #     """Tries to export dataframe to latex table
 
-        :df: TODO
-        :returns: TODO
+    #     :df: TODO
+    #     :returns: TODO
 
-        """
-        colnames = list()
-        err_prefix = self._err_of("")
-        for colname in df.columns:
-            if colname[0] == err_prefix and colname[1:] in self.gm:
-                unit = " / " + self.gv[colname[1:]]
-                colname = self.gm[colname[1:]]
-                colnames.append(r"$\Delta " + colname + "$" + unit)
-                continue
-            if colname in self.gm:
-                unit = " / " + self.gv[colname]
-                colname = self.gm[colname]
-                colnames.append("$" + colname + "$" + unit)
-                continue
-            if err_prefix in colname and "\\" not in colname:
-                colname = colname.replace(err_prefix, "\\Delta ")
-            if len(colname) > 1 and "\\" not in colname:
-                colname = "\\" + colname
+    #     """
+    #     colnames = list()
+    #     err_prefix = self.err_prefix
+    #     for colname in df.columns:
+    #         if colname[0] == err_prefix and colname[1:] in self.gm:
+    #             unit = " / " + self.gv[colname[1:]]
+    #             colname = self.gm[colname[1:]]
+    #             colnames.append(r"$\Delta " + colname + "$" + unit)
+    #             continue
+    #         if colname in self.gm:
+    #             unit = " / " + self.gv[colname]
+    #             colname = self.gm[colname]
+    #             colnames.append("$" + colname + "$" + unit)
+    #             continue
+    #         if err_prefix in colname and "\\" not in colname:
+    #             colname = colname.replace(err_prefix, "\\Delta ")
+    #         if len(colname) > 1 and "\\" not in colname:
+    #             colname = "\\" + colname
 
-            colname = "$" + colname + "$"
-            colnames.append(colname)
+    #         colname = "$" + colname + "$"
+    #         colnames.append(colname)
 
-        df.columns = colnames
-        if name:
-            with open(self.output_dir + f"messreihe_{name}.tex", "w") as tf:
-                tf.write(df.to_latex(escape=False))
+    #     df.columns = colnames
+    #     if name:
+    #         with open(self.output_dir + f"messreihe_{name}.tex", "w") as tf:
+    #             tf.write(df.to_latex(escape=False))
+    #     else:
+    #         with open(self.output_dir + f"messreihe_{df.name}.tex", "w") as tf:
+    #             tf.write(df.to_latex(escape=False))
+
+    def _unit_of(self, sl: str) -> str:
+        if sl.startswith(self.err_prefix):
+            unit = self.gv[sl.removeprefix(self.err_prefix)]
         else:
-            with open(self.output_dir + f"messreihe_{df.name}.tex", "w") as tf:
-                tf.write(df.to_latex(escape=False))
+            unit = self.gv[sl]
+        return unit
 
-    def print_ftable(
+    def _table_format(
+        self, ser: pandas.Series, split: bool
+    ) -> Union[tuple[str, str], str]:
+        exp = 0
+        pre_dot = 0
+        post_dot = 0
+        e_pre_dot = 0
+        e_post_dot = 0
+        if split:
+            for _, val in ser.items():
+                fmt_x = val.__format__("")
+                if "e" in fmt_x:
+                    fmt_x, _exp = fmt_x.split("e", 1)
+                    if len(_exp.strip()) > exp:
+                        exp = len(_exp.strip())
+
+                nom, err = fmt_x.replace("(", "").replace(")", "").split("+/-", 1)
+                m = re.match(r"(?P<pre>\d+)(\.(?P<post>\d+))*", nom)
+                if m:
+                    m = m.groupdict()
+                    _pre_dot = m["pre"]
+                    _post_dot = m["post"]
+                    if len(_pre_dot) > pre_dot:
+                        pre_dot = len(_pre_dot)
+                    if _post_dot is not None and len(_post_dot) > post_dot:
+                        post_dot = len(_post_dot)
+                m = re.match(r"(?P<pre>\d+)(\.(?P<post>\d+))*", err)
+                if m:
+                    m = m.groupdict()
+                    _e_pre_dot = m["pre"]
+                    _e_post_dot = m["post"]
+                    if len(_e_pre_dot) > e_pre_dot:
+                        e_pre_dot = len(_e_pre_dot)
+                    if _e_post_dot is not None and len(_e_post_dot) > e_post_dot:
+                        e_post_dot = len(_e_post_dot)
+        else:
+            for _, val in ser.items():
+                fmt_x = val.__format__("S")
+                if "e" in fmt_x:
+                    fmt_x, _exp = fmt_x.split("e", 1)
+                    if len(_exp.strip()) > exp:
+                        exp = len(_exp.strip())
+
+                m = re.match(r"(?P<pre>\d+)(\.(?P<post>\d+))*\((?P<err>\d+)\)", fmt_x)
+                if m:
+                    m = m.groupdict()
+                    _pre_dot = m["pre"]
+                    _post_dot = m["post"]
+                    _e_post_dot = m["err"]
+                    if len(_pre_dot) > pre_dot:
+                        pre_dot = len(_pre_dot)
+                    if _post_dot is not None and len(_post_dot) > post_dot:
+                        post_dot = len(_post_dot)
+                    if len(_e_post_dot) > e_post_dot:
+                        e_post_dot = len(_e_post_dot)
+        if split:
+            if exp:
+                return f"{pre_dot}.{post_dot}e{exp}", f"{e_pre_dot}.{e_post_dot}e{exp}"
+            return f"{pre_dot}.{post_dot}", f"{e_pre_dot}.{e_post_dot}"
+        else:
+            if exp:
+                return f"{pre_dot}.{post_dot}({e_post_dot})e{exp}"
+            return f"{pre_dot}.{post_dot}({e_post_dot})"
+
+    def print_table(
         self,
-        df: DataFrameLike,
-        name: Optional[str] = None,
-        format: str = "standard",
+        *args: Union[str, s.Symbol],
+        name: str = "",
         split: bool = False,
+        inline_units: bool = False,
+        vars: Optional[list[str] | list[s.Symbol]] = list(),
     ):
-        df = df.u.com
-        numColumns = df.shape[1]
+        cols = list()
+        for arg in args:
+            if isinstance(arg, str):
+                cols.append(arg)
+            elif isinstance(arg, s.Symbol):
+                cols.append(arg.name)
+            else:
+                raise Exception("Unsupported type in args")
+        if vars:
+            for arg in vars:
+                if isinstance(arg, str):
+                    cols.append(arg)
+                elif isinstance(arg, s.Symbol):
+                    cols.append(arg.name)
+                else:
+                    raise Exception("Unsupported type in args")
+
+        # first handle if split or not and check if ufloat arrays
+        # self.data = self.data.astype("ufloat")
+
+        df = self.data.u.com
+        df = df[cols].astype("ufloat")
+        if split:
+            coldict = self._col_rename(df.u.sep.columns)
+        else:
+            coldict = self._col_rename(df.columns)
+
+        if inline_units:
+            header = (
+                " & ".join(
+                    [
+                        self._tblr_esc(val + " / " + self._unit_of(key))
+                        for key, val in coldict.items()
+                    ]
+                )
+                + "\\\\\n"
+            )
+        else:
+            header = (
+                " & ".join([self._tblr_esc(val) for _, val in coldict.items()])
+                + "\\\\\n"
+            )
+            header += (
+                " & ".join(
+                    [self._tblr_esc(self._unit_of(key)) for key, _ in coldict.items()]
+                )
+                + "\\\\\n"
+            )
+
+        # numColumns = len(coldict)
         numRows = df.shape[0]
-        output = io.StringIO()
-
-        colnames = list()
-        err_prefix = self._err_of("")
-        for colname in df.columns:
-            if colname[0] == err_prefix and colname[1:] in self.gm:
-                unit = " / " + self.gv[colname[1:]]
-                colname = self.gm[colname[1:]]
-                colnames.append(r"{{{$\Delta " + colname + "$" + unit + "}}}")
-                continue
-            if colname in self.gm:
-                unit = " / " + self.gv[colname]
-                colname = self.gm[colname]
-                colnames.append("{{{$" + colname + "$" + unit + "}}}")
-                continue
-            if err_prefix in colname and "\\" not in colname:
-                colname = colname.replace(err_prefix, "\\Delta ")
-            if len(colname) > 1 and "\\" not in colname:
-                colname = "\\" + colname
-
-            colnames.append("{{{$" + colname + "$}}}")
+        colspec = []
+        for _, ser in df.items():
             if split:
-                colnames.append("{{{$\\Delta " + colname + "$}}}")
+                nom, err = self._table_format(ser, split)
+                colspec.append(f"S[table-format={nom}]")
+                colspec.append(f"S[table-format={err}]")
+            else:
+                val = self._table_format(ser, split)
+                colspec.append(f"S[table-format={val}]")
 
-        esses = "S" * numColumns
-        output.write("\\begin{tblr}{" + esses + "}\n")
+        begin = "\\begin{tblr}{colspec={" + "|".join(colspec) + "}}\n"
+        end = "\\end{tblr}\n"
+
+        output = io.StringIO()
+        output.write(begin)
+        output.write(header)
         if split:
 
             def format_value(x):  # type: ignore
@@ -323,41 +443,150 @@ class Project:
                     val = fmt_x.replace("+/-", " & ")
                 return val
 
-            # colFormat = "%s|%s" % (alignment, alignment * numColumns)
-            # Write header
-            # output.write("\\begin{tabular}{%s}\n" % colFormat)
-            output.write(" & ".join(colnames) + "\\\\\n")
-
-            for i in range(numRows):
-                output.write(
-                    " & ".join([format_value(val) for val in df.iloc[i]]) + "\\\\\n"
-                )
         else:
-            output.write(" & ".join(colnames) + "\\\\\n")
 
             def format_value(x):
                 fmt_x = x.__format__("S")
                 s = re.sub(r"\((.*?)\)", lambda g: re.sub(r"\.", "", g[0]), fmt_x)
                 return s
 
-            for i in range(numRows):
-                output.write(
-                    " & ".join([format_value(val) for val in df.iloc[i]]) + "\\\\\n"
-                )
+        for i in range(numRows):
+            output.write(
+                " & ".join([format_value(val) for val in df.iloc[i]]) + "\\\\\n"
+            )
+        output.write(end)
 
-        output.write("\\end{tblr}\n")
-        # output.write("& %s\\\\\\hline\n" % " & ".join(columnLabels))
-        # Write data lines
-
-        # Write footer
-        # output.write("\\end{tabular}")
+        # output.seek(0)
+        # print(output.read())
         if name:
             with open(self.output_dir + f"messreihe_{name}.tex", "w") as tf:
                 tf.write(output.getvalue())
         else:
             with open(self.output_dir + f"messreihe_{df.name}.tex", "w") as tf:
                 tf.write(output.getvalue())
-        # return output.getvalue()
+
+    def _tblr_esc(self, s: str):
+        return f"{{{{{{{s}}}}}}}"
+
+    def _col_rename(self, columns: list[str]) -> dict[str, str]:
+        err_prefix = self.err_prefix
+        # rcol = {col: rf"${self.gm[col]}$" for col in columns if col in self.gm}
+        # rdcol = {
+        #     col: rf"$\Delta {self.gm[col.removeprefix(self.err_prefix)]}$"
+        #     for col in columns
+        #     if col.startswith(self.err_prefix)
+        #     and col.removeprefix(self.err_prefix) in self.gm
+        # }
+        rcol = dict()
+        for colname in columns:
+            if (
+                colname.startswith(err_prefix)
+                and colname.removeprefix(err_prefix) in self.gm
+            ):
+                rmcol = colname.removeprefix(err_prefix)
+                coln = self.gm[rmcol]
+                rcol[colname] = r"$\Delta " + coln + "$"
+                continue
+            if colname in self.gm:
+                coln = self.gm[colname]
+                rcol[colname] = "$" + coln + "$"
+                continue
+            if colname.startswith(err_prefix) and "\\" not in colname:
+                subbed = colname.replace(err_prefix, "\\Delta ")
+                rcol[colname] = "$" + subbed + "$"
+            # if len(colname) > 1 and not colname.startswith("\\"):
+            #     coln = "\\" + colname
+            #     rcol[colname] = "{{{$" + coln + "$}}}"
+        return rcol
+
+    # def print_ftable(
+    #     self,
+    #     df: DataFrameLike,
+    #     name: Optional[str] = None,
+    #     format: str = "standard",
+    #     split: bool = False,
+    # ):
+    #     df = df.u.com
+    #     numColumns = df.shape[1]
+    #     numRows = df.shape[0]
+    #     output = io.StringIO()
+
+    #     colnames = list()
+    #     err_prefix = self.err_prefix
+    #     for colname in df.columns:
+    #         if colname[0] == err_prefix and colname[1:] in self.gm:
+    #             unit = " / " + self.gv[colname[1:]]
+    #             colname = self.gm[colname[1:]]
+    #             colnames.append(r"{{{$\Delta " + colname + "$" + unit + "}}}")
+    #             continue
+    #         if colname in self.gm:
+    #             unit = " / " + self.gv[colname]
+    #             colname = self.gm[colname]
+    #             colnames.append("{{{$" + colname + "$" + unit + "}}}")
+    #             continue
+    #         if err_prefix in colname and "\\" not in colname:
+    #             colname = colname.replace(err_prefix, "\\Delta ")
+    #         if len(colname) > 1 and "\\" not in colname:
+    #             colname = "\\" + colname
+
+    #         colnames.append("{{{$" + colname + "$}}}")
+    #         if split:
+    #             colnames.append("{{{$\\Delta " + colname + "$}}}")
+
+    #     esses = "S" * numColumns
+    #     output.write("\\begin{tblr}{" + esses + "}\n")
+    #     if split:
+
+    #         def format_value(x):  # type: ignore
+    #             fmt_x = x.__format__("")
+    #             if "e" in fmt_x:
+    #                 val, exp = fmt_x.split("e", 1)
+    #                 val = (
+    #                     val.replace("+/-", "e" + exp + " & ")
+    #                     .replace("(", "")
+    #                     .replace(")", "")
+    #                     + "e"
+    #                     + exp
+    #                 )
+    #             else:
+    #                 val = fmt_x.replace("+/-", " & ")
+    #             return val
+
+    #         # colFormat = "%s|%s" % (alignment, alignment * numColumns)
+    #         # Write header
+    #         # output.write("\\begin{tabular}{%s}\n" % colFormat)
+    #         output.write(" & ".join(colnames) + "\\\\\n")
+
+    #         for i in range(numRows):
+    #             output.write(
+    #                 " & ".join([format_value(val) for val in df.iloc[i]]) + "\\\\\n"
+    #             )
+    #     else:
+    #         output.write(" & ".join(colnames) + "\\\\\n")
+
+    #         def format_value(x):
+    #             fmt_x = x.__format__("S")
+    #             s = re.sub(r"\((.*?)\)", lambda g: re.sub(r"\.", "", g[0]), fmt_x)
+    #             return s
+
+    #         for i in range(numRows):
+    #             output.write(
+    #                 " & ".join([format_value(val) for val in df.iloc[i]]) + "\\\\\n"
+    #             )
+
+    #     output.write("\\end{tblr}\n")
+    #     # output.write("& %s\\\\\\hline\n" % " & ".join(columnLabels))
+    #     # Write data lines
+
+    #     # Write footer
+    #     # output.write("\\end{tabular}")
+    #     if name:
+    #         with open(self.output_dir + f"messreihe_{name}.tex", "w") as tf:
+    #             tf.write(output.getvalue())
+    #     else:
+    #         with open(self.output_dir + f"messreihe_{df.name}.tex", "w") as tf:
+    #             tf.write(output.getvalue())
+    #     # return output.getvalue()
 
     def figure_legend(self, **kwargs) -> None:
         """
@@ -524,7 +753,7 @@ class Project:
             name = x.name
         else:
             raise Exception("Unsupported type")
-        return f"d{name}"
+        return f"{self.err_prefix}{name}"
 
     def _expr_to_np(self, expr: Expr) -> Callable:
         """Converts a Sympy Expression to a numpy calculable function"""
@@ -652,6 +881,7 @@ class Project:
 
         self.data[new_var] = self._expr_to_np(expr=expr)(**function_data)
         if not iserr:
+            print(err_function_data)
             if err_function_data:
                 err_expr = self._error_func(expr=expr)
                 err_function_data = {
