@@ -1,0 +1,17 @@
+#!/bin/bash
+GIT_ROOT=$(git rev-parse --show-toplevel)
+cd $GIT_ROOT
+results=( $(find $GIT_ROOT -path "*/bin/activate") )
+if (( ${#results[@]} )) ; then
+    echo "Virtual environment found"
+else
+    echo "No virtual environment was found"
+    echo "==> Consider Running setup or update"
+fi
+
+echo "==> Activate Virtual Environment…"
+source "${results[0]}"
+
+cd $VIRTUAL_ENV"/bin/"
+
+python -i $GIT_ROOT"/script/interactivesetup.py" 

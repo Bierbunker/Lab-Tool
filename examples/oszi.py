@@ -1,4 +1,6 @@
 import sympy as simp
+
+# pyright: reportUnboundVariable=false
 from sympy import sin, pi
 import numpy as np
 import pandas as pd
@@ -6,6 +8,7 @@ from labtool_ex2 import Project
 from uncertainties import ufloat
 from uncertainties import umath
 
+# pyright: reportUndefinedVariable=false
 
 if __name__ == "__main__":
     # Preamble and configuration

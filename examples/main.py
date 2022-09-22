@@ -16,22 +16,25 @@ from scipy.integrate import simps
 
 from labtool_ex2 import Project
 
+# pyright: reportUndefinedVariable=false
+
 
 def make_project_stuff(project, start, end):
-    zeros = project.probe_for_zeros(start, end, 'wx')
+    zeros = project.probe_for_zeros(start, end, "wx")
     period = (zeros.iloc[-1] - zeros.iloc[0]) / (len(zeros) // 2)
     project.local_ledger["period"].append(period)
     print("\n\n**************************************************************")
     print(f"Periode {period}")
     print("**************************************************************\n\n")
-    project.data = project.data - (project.data['t'].iloc[0], 0, 0, 0)
+    project.data = project.data - (project.data["t"].iloc[0], 0, 0, 0)
     project.working_dfs.append(project.data.reset_index(drop=True))
-    project.plot_data("t", "wx", labels=[
-                      "Zeit / s", r"$\omega_x$ / rad s$^{-1}$"], withfit=True)
+    project.plot_data(
+        "t", "wx", labels=["Zeit / s", r"$\omega_x$ / rad s$^{-1}$"], withfit=True
+    )
 
 
 # Press the green button in the gutter to run the script.
-if __name__ == '__main__':
+if __name__ == "__main__":
     P = Project("Reibung", font=13)
     P.local_ledger["period"] = list()
 
@@ -39,11 +42,12 @@ if __name__ == '__main__':
 
     P.data["t"] = P.data["t"] / P.data["t"].mean()
     fig, ax = plt.subplots()
-    category = ["Rutschzeit"] * len(P.data['t'])
+    category = ["Rutschzeit"] * len(P.data["t"])
     ax.scatter(P.data["t"], category, c="b", label="Messwerte")
     ax.scatter(P.data["t"].mean(), category[0], c="r", label="Mittelwert")
-    ax.errorbar(P.data["t"].mean(), [category[0]],
-                c="r", capsize=3, xerr=P.data["t"].sem())
+    ax.errorbar(
+        P.data["t"].mean(), [category[0]], c="r", capsize=3, xerr=P.data["t"].sem()
+    )
     fig.suptitle("Relative Darstellung der Rutschzeitmesswerte")
     ax.legend()
 
@@ -56,11 +60,12 @@ if __name__ == '__main__':
     P.data["ft"] = P.data["ft"] / P.data["ft"].mean()
     print(P.data["ft"])
     fig, ax = plt.subplots()
-    category = ["Fallzeit"] * len(P.data['ft'])
+    category = ["Fallzeit"] * len(P.data["ft"])
     ax.scatter(P.data["ft"], category, c="b", label="Messwerte")
     ax.scatter(P.data["ft"].mean(), category[0], c="r", label="Mittelwert")
-    ax.errorbar(P.data["ft"].mean(), [category[0]],
-                c="r", capsize=3, xerr=P.data["ft"].sem())
+    ax.errorbar(
+        P.data["ft"].mean(), [category[0]], c="r", capsize=3, xerr=P.data["ft"].sem()
+    )
     fig.suptitle("Relative Darstellung der Fallzeitmesswerte")
     ax.legend()
 

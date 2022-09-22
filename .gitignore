@@ -177,3 +177,6 @@ dmypy.json
 ## test data and output
 Data/*
 Output/*
+tokens
+
+coverage.json

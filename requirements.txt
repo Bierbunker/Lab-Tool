@@ -1,0 +1,10 @@
+    pandas
+    numpy
+    matplotlib
+    uncertainties
+    sympy>=1.11
+    lmfit
+    uncertainties
+    numdifftools
+    scikit-learn
+    pytest
