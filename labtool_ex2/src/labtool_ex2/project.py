@@ -755,7 +755,6 @@ class Project:
 
         self.data[new_var] = self._expr_to_np(expr=expr)(**function_data)
         if not iserr:
-            print(err_function_data)
             if err_function_data:
                 err_expr = self._error_func(expr=expr)
                 err_function_data = {

@@ -108,13 +108,13 @@ def test_trafo_protokoll():
         name="messwertversuch2",
     )
     S = U1 * I1
-    print(P.data)
+    # print(P.data)
     P.resolve(S)
     Q1 = (S**2 - P1**2) ** 0.5
     P.resolve(Q1)
     P.data = P.data.u.com
-    print(P.data.dtypes)
-    print(P.data)
+    # print(P.data.dtypes)
+    # print(P.data)
     P.data = P.data.u.sep
     # P.data["dQ1"] = P.apply_df_err(Q1)
     l = P1 / S
