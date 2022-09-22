@@ -63,7 +63,11 @@ def test_trafo_protokoll():
     P.load_data(filepath)
     # print(P.data)
     P.print_table(
-        P.data[["P1", "dP1", "U", "dU", "U1", "dU1", "I1", "dI1", "U2", "dU2"]],
+        "P1",
+        "U",
+        "U1",
+        "I1",
+        "U2",
         name="messwertversuch1",
     )
     S = U1 * I1
@@ -73,7 +77,9 @@ def test_trafo_protokoll():
     l = P1 / S
     P.resolve(l)
     P.print_table(
-        P.data[["S", "dS", "Q1", "dQ1", "l", "dl"]],
+        "S",
+        "Q1",
+        "l",
         name="wertversuch1",
     )
     # P2 = U2 * I2
@@ -94,20 +100,11 @@ def test_trafo_protokoll():
     P.load_data(filepath, loadnew=True)
     # print(P.data)
     P.print_table(
-        P.data[
-            [
-                "P1",
-                "dP1",
-                "U1",
-                "dU1",
-                "I1",
-                "dI1",
-                "U2",
-                "dU2",
-                "I2",
-                "dI2",
-            ]
-        ],
+        "P1",
+        "U1",
+        "I1",
+        "U2",
+        "I2",
         name="messwertversuch2",
     )
     S = U1 * I1
@@ -129,9 +126,12 @@ def test_trafo_protokoll():
     n = P2 / P1 * 100
     P.resolve(n)
     P.print_table(
-        P.data[
-            ["S", "dS", "Q1", "dQ1", "l", "dl", "P2", "dP2", "PV", "dPV", "n", "dn"]
-        ],
+        "S",
+        "Q1",
+        "l",
+        "P2",
+        "PV",
+        "n",
         name="wertversuch2",
     )
 
@@ -145,35 +145,21 @@ def test_trafo_protokoll():
     P.resolve(R)
     P.resolve(PR)
     P.print_table(
-        P.data[
-            [
-                "P1",
-                "dP1",
-                "U",
-                "dU",
-                "U1",
-                "dU1",
-                "I1",
-                "dI1",
-            ]
-        ],
+        "P1",
+        "U",
+        "U1",
+        "I1",
         name="messwertversuch3_1",
     )
     P.print_table(
-        P.data[
-            [
-                "U2",
-                "dU2",
-                "I2",
-                "dI2",
-                "Ur",
-                "dUr",
-            ]
-        ],
+        "U2",
+        "I2",
+        "Ur",
         name="messwertversuch3_2",
     )
     P.print_table(
-        P.data[["PR", "dPR", "R", "dR"]],
+        "PR",
+        "R",
         name="wertversuch3",
     )
     S = U1 * I1
@@ -188,23 +174,13 @@ def test_trafo_protokoll():
     P.resolve(PV)
     n = PR / P1 * 100
     P.resolve(n)
-    P.print_ftable(
-        P.data[
-            [
-                "S",
-                "dS",
-                "Q1",
-                "dQ1",
-                "l",
-                "dl",
-                "P2",
-                "dP2",
-                "PV",
-                "dPV",
-                "n",
-                "dn",
-            ]
-        ],
+    P.print_table(
+        "S",
+        "Q1",
+        "l",
+        "P2",
+        "PV",
+        "n",
         name="wertversuch3_extra",
         split=True,
     )
