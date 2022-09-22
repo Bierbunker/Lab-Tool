@@ -312,6 +312,13 @@ class Project:
                 return f"{pre_dot}.{post_dot}({e_post_dot})e{exp}"
             return f"{pre_dot}.{post_dot}({e_post_dot})"
 
+    def print_table_expr(
+        self,
+        expr: Expr,
+        name: str = "",
+    ):
+        self.print_table(*expr.free_symbols, name=name)
+
     def print_table(
         self,
         *args: Union[str, s.Symbol],
