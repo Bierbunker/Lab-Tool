@@ -241,45 +241,6 @@ class Project:
         """Prints the expression in latex format and substitutes the variables according to the mapping"""
         latex(expr=expr, symbol_names=self.gm)
 
-    # def print_table(self, expr: Expr):
-    #     pass
-
-    # def print_table(self, df: DataFrameLike, name: Optional[str] = None):
-    #     """Tries to export dataframe to latex table
-
-    #     :df: TODO
-    #     :returns: TODO
-
-    #     """
-    #     colnames = list()
-    #     err_prefix = self.err_prefix
-    #     for colname in df.columns:
-    #         if colname[0] == err_prefix and colname[1:] in self.gm:
-    #             unit = " / " + self.gv[colname[1:]]
-    #             colname = self.gm[colname[1:]]
-    #             colnames.append(r"$\Delta " + colname + "$" + unit)
-    #             continue
-    #         if colname in self.gm:
-    #             unit = " / " + self.gv[colname]
-    #             colname = self.gm[colname]
-    #             colnames.append("$" + colname + "$" + unit)
-    #             continue
-    #         if err_prefix in colname and "\\" not in colname:
-    #             colname = colname.replace(err_prefix, "\\Delta ")
-    #         if len(colname) > 1 and "\\" not in colname:
-    #             colname = "\\" + colname
-
-    #         colname = "$" + colname + "$"
-    #         colnames.append(colname)
-
-    #     df.columns = colnames
-    #     if name:
-    #         with open(self.output_dir + f"messreihe_{name}.tex", "w") as tf:
-    #             tf.write(df.to_latex(escape=False))
-    #     else:
-    #         with open(self.output_dir + f"messreihe_{df.name}.tex", "w") as tf:
-    #             tf.write(df.to_latex(escape=False))
-
     def _unit_of(self, sl: str) -> str:
         if sl.startswith(self.err_prefix):
             unit = self.gv[sl.removeprefix(self.err_prefix)]
@@ -408,7 +369,6 @@ class Project:
                 + "\\\\\n"
             )
 
-        # numColumns = len(coldict)
         numRows = df.shape[0]
         colspec = []
         for _, ser in df.items():
@@ -470,13 +430,6 @@ class Project:
 
     def _col_rename(self, columns: list[str]) -> dict[str, str]:
         err_prefix = self.err_prefix
-        # rcol = {col: rf"${self.gm[col]}$" for col in columns if col in self.gm}
-        # rdcol = {
-        #     col: rf"$\Delta {self.gm[col.removeprefix(self.err_prefix)]}$"
-        #     for col in columns
-        #     if col.startswith(self.err_prefix)
-        #     and col.removeprefix(self.err_prefix) in self.gm
-        # }
         rcol = dict()
         for colname in columns:
             if (
@@ -494,99 +447,7 @@ class Project:
             if colname.startswith(err_prefix) and "\\" not in colname:
                 subbed = colname.replace(err_prefix, "\\Delta ")
                 rcol[colname] = "$" + subbed + "$"
-            # if len(colname) > 1 and not colname.startswith("\\"):
-            #     coln = "\\" + colname
-            #     rcol[colname] = "{{{$" + coln + "$}}}"
         return rcol
-
-    # def print_ftable(
-    #     self,
-    #     df: DataFrameLike,
-    #     name: Optional[str] = None,
-    #     format: str = "standard",
-    #     split: bool = False,
-    # ):
-    #     df = df.u.com
-    #     numColumns = df.shape[1]
-    #     numRows = df.shape[0]
-    #     output = io.StringIO()
-
-    #     colnames = list()
-    #     err_prefix = self.err_prefix
-    #     for colname in df.columns:
-    #         if colname[0] == err_prefix and colname[1:] in self.gm:
-    #             unit = " / " + self.gv[colname[1:]]
-    #             colname = self.gm[colname[1:]]
-    #             colnames.append(r"{{{$\Delta " + colname + "$" + unit + "}}}")
-    #             continue
-    #         if colname in self.gm:
-    #             unit = " / " + self.gv[colname]
-    #             colname = self.gm[colname]
-    #             colnames.append("{{{$" + colname + "$" + unit + "}}}")
-    #             continue
-    #         if err_prefix in colname and "\\" not in colname:
-    #             colname = colname.replace(err_prefix, "\\Delta ")
-    #         if len(colname) > 1 and "\\" not in colname:
-    #             colname = "\\" + colname
-
-    #         colnames.append("{{{$" + colname + "$}}}")
-    #         if split:
-    #             colnames.append("{{{$\\Delta " + colname + "$}}}")
-
-    #     esses = "S" * numColumns
-    #     output.write("\\begin{tblr}{" + esses + "}\n")
-    #     if split:
-
-    #         def format_value(x):  # type: ignore
-    #             fmt_x = x.__format__("")
-    #             if "e" in fmt_x:
-    #                 val, exp = fmt_x.split("e", 1)
-    #                 val = (
-    #                     val.replace("+/-", "e" + exp + " & ")
-    #                     .replace("(", "")
-    #                     .replace(")", "")
-    #                     + "e"
-    #                     + exp
-    #                 )
-    #             else:
-    #                 val = fmt_x.replace("+/-", " & ")
-    #             return val
-
-    #         # colFormat = "%s|%s" % (alignment, alignment * numColumns)
-    #         # Write header
-    #         # output.write("\\begin{tabular}{%s}\n" % colFormat)
-    #         output.write(" & ".join(colnames) + "\\\\\n")
-
-    #         for i in range(numRows):
-    #             output.write(
-    #                 " & ".join([format_value(val) for val in df.iloc[i]]) + "\\\\\n"
-    #             )
-    #     else:
-    #         output.write(" & ".join(colnames) + "\\\\\n")
-
-    #         def format_value(x):
-    #             fmt_x = x.__format__("S")
-    #             s = re.sub(r"\((.*?)\)", lambda g: re.sub(r"\.", "", g[0]), fmt_x)
-    #             return s
-
-    #         for i in range(numRows):
-    #             output.write(
-    #                 " & ".join([format_value(val) for val in df.iloc[i]]) + "\\\\\n"
-    #             )
-
-    #     output.write("\\end{tblr}\n")
-    #     # output.write("& %s\\\\\\hline\n" % " & ".join(columnLabels))
-    #     # Write data lines
-
-    #     # Write footer
-    #     # output.write("\\end{tabular}")
-    #     if name:
-    #         with open(self.output_dir + f"messreihe_{name}.tex", "w") as tf:
-    #             tf.write(output.getvalue())
-    #     else:
-    #         with open(self.output_dir + f"messreihe_{df.name}.tex", "w") as tf:
-    #             tf.write(output.getvalue())
-    #     # return output.getvalue()
 
     def figure_legend(self, **kwargs) -> None:
         """
