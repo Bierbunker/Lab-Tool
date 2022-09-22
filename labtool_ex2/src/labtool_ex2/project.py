@@ -320,6 +320,12 @@ class Project:
         inline_units: bool = False,
         vars: Optional[list[str] | list[s.Symbol]] = list(),
     ):
+        """If you want to print a latex table this is the function you need.
+        With split you specify if the error should be printed separately from the nominal value.
+        With inline_units you specify if the units of the variables should be printed on the next line or inline.
+        With name you customize the name of the output file
+        With vars is an alternative way of passing values to this function print_table(*vars) is preferred
+        """
         cols = list()
         for arg in args:
             if isinstance(arg, str):
