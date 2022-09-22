@@ -115,14 +115,12 @@ def test_no_difference_if_com_or_sep_calc():
     summe = t + tau
     P.resolve(summe)
     temp = P.data
-    print(temp)
     P.vload()
     P.load_data(filepath, loadnew=True)
 
     summe = t + tau
     P.resolve(summe)
-    print(P.data)
-    print(temp.u.sep)
+    # print(temp.u.sep == P.data)
     assert all(temp.u.sep == P.data)
 
 
