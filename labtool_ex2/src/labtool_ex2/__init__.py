@@ -1,5 +1,5 @@
 __all__ = ["Project"]
-__version__ = "0.0.1"
+__version__ = "0.0.3"
 
 # from .Project import *
 # from .project import Project as Project  # noqa
