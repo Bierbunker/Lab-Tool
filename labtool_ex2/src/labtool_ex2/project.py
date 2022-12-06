@@ -1082,11 +1082,12 @@ class Project:
         use_all_known: bool = False,
         offset: Union[tuple[int, int], list[int]] = (0, 0),
         guess: dict[str, Union[int, float]] | None = None,
-        bounds: list[dict[str, str]] | None = None,
+        bounds: list[dict[str, str | float | int]] | None = None,
         add_fit_params: bool = True,
         granularity: int = 10000,
         gof: bool = False,
         sigmas: int = 1,
+        scale_covar: bool = False,
     ):
         """axes current main axes to plot on
         x string of independent variable
@@ -1139,6 +1140,13 @@ class Project:
                 min(raw_x), max(raw_x), granularity
             )
 
+        if bounds:
+            for bound in bounds:
+                mod.set_param_hint(
+                    name=bound["name"], min=bound["min"], max=bound["max"]
+                )
+                mod.print_param_hints()
+
         if guess:
             pars = mod.make_params(**guess)
         else:
@@ -1146,12 +1154,6 @@ class Project:
             # TODO custom error needs to be implemented
             print("No guess was passed")
             raise Exception
-        if bounds:
-            for bound in bounds:
-                mod.set_param_hint(
-                    name=bound["name"], min=bound["min"], max=bound["max"]
-                )
-
         # print(independent_vars)
         # print(pars)
 
@@ -1159,7 +1161,11 @@ class Project:
             weights = 1 / (self.data[self._err_of(y_name)])
             weights = weights.values.reshape(1, -1)
             out = mod.fit(
-                y_fit, pars, weights=weights, scale_covar=False, **independent_vars
+                y_fit,
+                pars,
+                weights=weights,
+                scale_covar=scale_covar,
+                **independent_vars,
             )
         else:
             # out = mod.fit(y_fit, pars,scale_covar=False, **independent_vars)
@@ -1177,7 +1183,7 @@ class Project:
                 paramstr += "\n" + rf"$\chi^2 = {out.chisqr}$ "
                 paramstr += "\n" + rf"$\chi^2_{{\nu}} = {out.redchi}$ "
 
-            self.add_text(axes=axes, text=paramstr, offset=offset)
+            self.add_text(axes=axes, text=paramstr, offset=offset, color=style)
 
         resp = np.array(out.eval(**cont_independent_vars))
         # print(resp)
@@ -1195,7 +1201,7 @@ class Project:
         # cx, cy, grid = conf_interval2d(out, out, "a1", "t2", 30, 30)
         # ctp = axes[0].contourf(cx, cy, grid, np.linspace(0, 1, 11))
         # fig.colorbar(ctp, ax=axes[0])
-        dely = sigmas * out.eval_uncertainty(**cont_independent_vars)
+        dely = out.eval_uncertainty(**cont_independent_vars, sigma=sigmas)
         # axes.plot(x, data)
         # axes.plot(x, out.best_fit)
         axes.fill_between(
@@ -1203,6 +1209,7 @@ class Project:
         )
         axes.plot(x_continues_plot_data, resp, style, label=f"{label} fit")
         print(out.fit_report(min_correl=0.25))
+        return out.params
 
     def savefig(self, name: str, clear: bool = True) -> Optional[plt.Axes]:
         """Use this method to save your figures"""
