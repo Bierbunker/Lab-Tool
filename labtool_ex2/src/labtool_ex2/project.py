@@ -24,6 +24,7 @@ from uncertainties import ufloat
 
 # from uncertainties.core import format_num
 from .helpers import round_up, split_into_args_kwargs
+from .helpers import round_up, split_into_args_kwargs, unique_std_devs
 
 from pathlib import Path
 from .LatexPrinter import latex
@@ -325,6 +326,7 @@ class Project:
         name: str = "",
         split: bool = False,
         inline_units: bool = False,
+        filter_all_same: bool = False,
         vars: Optional[list[str] | list[s.Symbol]] = list(),
     ):
         """If you want to print a latex table this is the function you need.
@@ -355,8 +357,15 @@ class Project:
 
         df = self.data.u.com
         df = df[cols].astype("ufloat")
+        unique_devs = unique_std_devs(df)
+
         if split:
             coldict = self._col_rename(df.u.sep.columns)
+            colcp = coldict.copy()
+            for i, (key, val) in enumerate(colcp.items()):
+                if i % 2 == 1 and unique_devs[i // 2]:
+                    del coldict[key]
+
         else:
             coldict = self._col_rename(df.columns)
 
@@ -384,16 +393,20 @@ class Project:
 
         numRows = df.shape[0]
         colspec = []
-        for _, ser in df.items():
+        for i, (_, ser) in enumerate(df.items()):
             if split:
                 nom, err = self._table_format(ser, split)
                 colspec.append(f"S[table-format={nom}]")
-                colspec.append(f"S[table-format={err}]")
+                if not unique_devs[i]:
+                    colspec.append(f"S[table-format={err}]")
             else:
                 val = self._table_format(ser, split)
-                colspec.append(f"S[table-format={val}]")
+                if unique_devs[i]:
+                    colspec.append(f"S[table-format={val.split('(',1)[0]}]")
+                else:
+                    colspec.append(f"S[table-format={val}]")
 
-        begin = "\\begin{tblr}{colspec={" + "|".join(colspec) + "}}\n"
+        begin = "\\begin{tblr}{colspec={" + "".join(colspec) + "}}\n"
         end = "\\end{tblr}\n"
 
         output = io.StringIO()
@@ -401,41 +414,55 @@ class Project:
         output.write(header)
         if split:
 
-            def format_value(x):  # type: ignore
+            def format_value(x, i):  # type: ignore
                 fmt_x = x.__format__("")
                 if "e" in fmt_x:
                     val, exp = fmt_x.split("e", 1)
-                    val = (
-                        val.replace("+/-", "e" + exp + " & ")
-                        .replace("(", "")
-                        .replace(")", "")
-                        + "e"
-                        + exp
-                    )
+                    if unique_devs[i]:
+                        val = val.split("+/-", 1)[0] + "e" + exp
+                    else:
+                        val = (
+                            val.replace("+/-", "e" + exp + " & ")
+                            .replace("(", "")
+                            .replace(")", "")
+                            + "e"
+                            + exp
+                        )
                 else:
-                    val = fmt_x.replace("+/-", " & ")
+                    if unique_devs[i]:
+                        val = fmt_x.split("+/-", 1)[0]
+                    else:
+                        val = fmt_x.replace("+/-", " & ")
                 return val
 
         else:
 
-            def format_value(x):
+            def format_value(x, i):
                 fmt_x = x.__format__("S")
-                s = re.sub(r"\((.*?)\)", lambda g: re.sub(r"\.", "", g[0]), fmt_x)
+                if unique_devs[i]:
+                    s = re.sub(r"\((.*?)\)", "", fmt_x)
+                else:
+                    s = re.sub(r"\((.*?)\)", lambda g: re.sub(r"\.", "", g[0]), fmt_x)
                 return s
 
         for i in range(numRows):
             output.write(
-                " & ".join([format_value(val) for val in df.iloc[i]]) + "\\\\\n"
+                " & ".join([format_value(val, j) for j, val in enumerate(df.iloc[i])])
+                + "\\\\\n"
             )
         output.write(end)
 
         # output.seek(0)
         # print(output.read())
         if name:
-            with open(self.output_dir + f"messreihe_{name}.tex", "w") as tf:
+            with open(
+                self.output_dir + self.tab_dir + f"messreihe_{name}.tex", "w"
+            ) as tf:
                 tf.write(output.getvalue())
         else:
-            with open(self.output_dir + f"messreihe_{df.name}.tex", "w") as tf:
+            with open(
+                self.output_dir + self.tab_dir + f"messreihe_{df.name}.tex", "w"
+            ) as tf:
                 tf.write(output.getvalue())
 
     def _tblr_esc(self, s: str):
