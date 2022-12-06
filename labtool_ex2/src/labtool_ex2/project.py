@@ -205,7 +205,17 @@ class Project:
         """
         pass
 
-    def histoofseries(self, ser, bins, name):
+    def plot_histo(
+        self,
+        axes: plt.Axes,
+        x: Union[str, s.Symbol, DataFrameLike],
+        label: str,
+        bins: int = 0,
+        offset: Union[tuple[int, int], list[int]] = (0, 0),
+        *args,
+        style: str = "r",
+        **kwargs,
+    ):
         """Plots the histogram of a pandas series and draws a fit
 
         :ser: TODO
@@ -214,25 +224,50 @@ class Project:
         :returns: TODO
 
         """
-        fig, ax = plt.subplots()
-        bins = np.linspace(ser.min(), ser.max(), bins + 1)
-        ser.hist(ax=ax, bins=bins)
-        y = (1 / (np.sqrt(2 * np.pi) * ser.std())) * np.exp(
-            -0.5 * (1 / ser.std() * (bins - ser.mean())) ** 2
+        if isinstance(x, Expr):
+            x_name = self._infer_name(kw="x", pos=1)
+            raw_x: pandas.Series = self.data[x_name]
+        else:
+            raw_x, x_name = self._parse_input(x)
+
+        tempv = None
+        tempm = None
+        p = "p"
+        if p in self.gv:
+            tempv = self.gv[p]
+
+        if p in self.gm:
+            tempm = self.gm[p]
+        self.gv[p] = "1"
+        self.gm[p] = p
+        axes = self._set_x_y_label(ax=axes, x=x_name, y=p, color=style)
+        del self.gv[p]
+        del self.gm[p]
+        if tempv:
+            self.gv[p] = tempv
+        if tempm:
+            self.gm[p] = tempm
+
+        counts, bins = np.histogram(raw_x, bins)
+        bin_widths = np.diff(bins)
+        mu = ufloat(raw_x.mean(), raw_x.sem())
+        sigma = ufloat(raw_x.std(), 0)
+        raw_x.hist(ax=axes, bins=bins, density=True)
+        val = np.linspace(raw_x.min(), raw_x.max(), 1000)
+        p = np.exp(-0.5 * ((val - mu.n) / sigma.n) ** 2) / (
+            np.sqrt(2 * np.pi) * sigma.n
         )
-        ax.plot(bins, y, "--")
-        ax.set_xlabel(rf"${ser.name}$")
-        ax.set_ylabel("$N$")
-        ax.set_title(
-            rf"Histogramm von ${name}$: $\mu={ser.mean()}$, $\sigma={round_up(ser.std(), 4)}$"
+        axes.plot(
+            val, p, *args, linestyle="-", color=style, label=label + " fit", **kwargs
         )
-        fig.tight_layout()
-        plt.savefig(self.output_dir + "histo.png")
-        with open(
-            self.output_dir + f"histo_data_{ser.name}_mess_nr_{self.load_data_counter}",
-            "w",
-        ) as tf:
-            tf.write(ser.rename(rf"${ser.name}$").to_latex(escape=False))
+
+        paramstr = rf"$\mu = {mu}$ " + self.gv[x_name] + "\n"
+        paramstr += rf"$\sigma = {round_up(sigma.n,4)}$ " + self.gv[x_name] + "\n"
+        paramstr += rf"$N = {raw_x.size}$ " + "1"
+        if np.allclose(bin_widths[0], bin_widths):
+            paramstr += "\n" + rf"$h = {round_up(bin_widths[0],4)}$ " + self.gv[x_name]
+
+        self.add_text(axes=axes, text=paramstr, offset=offset, color=style)
 
     """
     TODO write own to latex function export data with the use of siunitx plugin
