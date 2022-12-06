@@ -2,6 +2,7 @@ import math
 
 from pathlib import Path
 from shutil import rmtree  #! only for testing remove later
+from uncertainties import unumpy
 
 
 def round_up(n, decimals=0):
@@ -52,6 +53,11 @@ def split_into_args_kwargs(s: str) -> tuple[list[str], dict[str, str]]:
         if param:
             _nargs.append(param)
     return _nargs, _kwargs
+
+
+def unique_std_devs(df):
+    a = unumpy.std_devs(df.to_numpy())
+    return (a[0] == a).all(0)
 
 
 if __name__ == "__main__":  #! only for testing delete later
