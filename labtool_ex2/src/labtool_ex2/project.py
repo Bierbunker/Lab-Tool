@@ -663,6 +663,7 @@ class Project:
         raw_y: pandas.Series,
         x_name: str,
         y_name: str,
+        style: str,
     ):
         errs = dict()
         if isinstance(raw_x.dtype, UfloatDtype):
@@ -682,7 +683,7 @@ class Project:
                 errs["yerr"] = self.data[name].values
             except Exception as e:
                 print(f"No yerr for {y_name} found")
-        axes.errorbar(raw_x, raw_y, fmt="none", capsize=3, **errs)
+        axes.errorbar(raw_x, raw_y, fmt="none", capsize=3, color=style, **errs)
 
     def _parse_input(
         self,
@@ -1011,7 +1012,12 @@ class Project:
 
         if errors:
             self._add_error(
-                axes=axes, raw_x=raw_x, raw_y=raw_y, x_name=x_name, y_name=y_name
+                axes=axes,
+                raw_x=raw_x,
+                raw_y=raw_y,
+                x_name=x_name,
+                y_name=y_name,
+                style=style,
             )
 
         axes.scatter(
@@ -1047,7 +1053,12 @@ class Project:
 
         if errors:
             self._add_error(
-                axes=axes, raw_x=raw_x, raw_y=raw_y, x_name=x_name, y_name=y_name
+                axes=axes,
+                raw_x=raw_x,
+                raw_y=raw_y,
+                x_name=x_name,
+                y_name=y_name,
+                color=style,
             )
 
         axes.plot(
@@ -1207,6 +1218,7 @@ class Project:
         keyvalue: Optional[dict[str, Any]] = None,
         text: Optional[str] = None,
         offset: Union[tuple[int, int], list[int]] = (0, 0),
+        color="#616161",
     ):
         """Adds parameters as text on an axes"""
         # maxes = max([_.zorder for _ in axes.get_children()])
@@ -1219,7 +1231,7 @@ class Project:
                 uparam = param
                 maxes.text(
                     s=rf"${self.gm[name]} = {uparam}$ " + self.gv[name],
-                    bbox={"facecolor": "#616161", "alpha": 0.85},
+                    bbox={"facecolor": color, "alpha": 0.85},
                     x=(xmax - xmin) / 100 * (5 + offset[0]) + xmin,
                     y=(ymax - ymin) * (offset[1] / 100 + (i + 1) / 7) + ymin,
                     fontsize=10,
@@ -1227,7 +1239,7 @@ class Project:
         if text is not None:
             maxes.text(
                 s=text,
-                bbox={"facecolor": "#616161", "alpha": 0.85},
+                bbox={"facecolor": color, "alpha": 0.85},
                 x=(xmax - xmin) / 100 * (5 + offset[0]) + xmin,
                 y=(ymax - ymin) * (offset[1] / 100 + 1 / 7) + ymin,
                 fontsize=10,
