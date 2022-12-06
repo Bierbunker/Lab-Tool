@@ -23,7 +23,6 @@ from lmfit.models import ExpressionModel
 from uncertainties import ufloat
 
 # from uncertainties.core import format_num
-from .helpers import round_up, split_into_args_kwargs
 from .helpers import round_up, split_into_args_kwargs, unique_std_devs
 
 from pathlib import Path
@@ -88,6 +87,12 @@ class Project:
 
             p = Path(f"./Output/{name}/")
             self._output_dir = f"./Output/{name}"
+            self._tab_dir = f"./tables/"
+            self._fig_dir = f"./figures/"
+            tabp = Path(self._output_dir + self._tab_dir)
+            figp = Path(self._output_dir + self._fig_dir)
+            tabp.mkdir(parents=True, exist_ok=True)
+            figp.mkdir(parents=True, exist_ok=True)
             p.mkdir(parents=True, exist_ok=True)
 
         # inject variables into global namespace can be improved if necessary however sympy does the same thing
@@ -104,6 +109,24 @@ class Project:
     def output_dir(self):
         """The output_dir property."""
         return self._output_dir
+
+    @property
+    def tab_dir(self):
+        """The tab_dir property."""
+        return self._tab_dir
+
+    @property
+    def fig_dir(self):
+        """The fig_dir property."""
+        return self._fig_dir
+
+    @fig_dir.setter
+    def fig_dir(self, value):
+        self._fig_dir = value
+
+    @tab_dir.setter
+    def tab_dir(self, value):
+        self._tab_dir = value
 
     @output_dir.setter
     def output_dir(self, value):
@@ -1172,7 +1195,7 @@ class Project:
 
     def savefig(self, name: str, clear: bool = True) -> Optional[plt.Axes]:
         """Use this method to save your figures"""
-        self.figure.savefig(self.output_dir + name, dpi=400)
+        self.figure.savefig(self.output_dir + self.fig_dir + name, dpi=400)
         if clear:
             self.figure.clear()
             ax = self.figure.add_subplot()
