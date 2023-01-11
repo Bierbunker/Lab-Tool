@@ -642,7 +642,7 @@ class UfloatDataFrameAccessor:
                     [
                         df,
                         pd.Series(
-                            uarray(self._obj[shortened], self._obj[column_name]),
+                            uarray(abs(self._obj[shortened]), self._obj[column_name]),
                             name=shortened,
                         ).astype("ufloat"),
                     ],
