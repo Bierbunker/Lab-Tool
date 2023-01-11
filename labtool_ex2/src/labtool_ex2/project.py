@@ -377,17 +377,19 @@ class Project:
         self,
         expr: Expr,
         name: str = "",
+        **kwargs,
     ):
-        self.print_table(*expr.free_symbols, name=name)
+        self.print_table(*expr.free_symbols, name=name, **kwargs)
 
     def print_table(
         self,
-        *args: Union[str, s.Symbol],
+        *args: Union[str, s.Symbol, s.Basic],
         name: str = "",
         split: bool = False,
         inline_units: bool = False,
         filter_all_same: bool = False,
         vars: Optional[list[str] | list[s.Symbol]] = list(),
+        censor: Optional[list] = [np.nan, float("nan")],
     ):
         """If you want to print a latex table this is the function you need.
         With split you specify if the error should be printed separately from the nominal value.
@@ -416,8 +418,11 @@ class Project:
         # self.data = self.data.astype("ufloat")
 
         df = self.data.u.com
+        # print(df)
         df = df[cols].astype("ufloat")
         unique_devs = unique_std_devs(df)
+        if not filter_all_same:
+            unique_devs = [False] * len(unique_devs)
 
         if split:
             coldict = self._col_rename(df.u.sep.columns)
@@ -498,16 +503,28 @@ class Project:
         else:
 
             def format_value(x, i):
-                fmt_x = x.__format__("S")
-                if unique_devs[i]:
-                    s = re.sub(r"\((.*?)\)", "", fmt_x)
-                else:
-                    s = re.sub(r"\((.*?)\)", lambda g: re.sub(r"\.", "", g[0]), fmt_x)
+                try:
+                    fmt_x = x.__format__("S")
+                    if unique_devs[i]:
+                        s = re.sub(r"\((.*?)\)", "", fmt_x)
+                    else:
+                        s = re.sub(
+                            r"\((.*?)\)", lambda g: re.sub(r"\.", "", g[0]), fmt_x
+                        )
+                except Exception:
+                    s = "{{{-}}}"
                 return s
 
         for i in range(numRows):
             output.write(
-                " & ".join([format_value(val, j) for j, val in enumerate(df.iloc[i])])
+                " & ".join(
+                    [
+                        format_value(val, j)
+                        if val not in censor and not isnan(val)
+                        else "{{{-}}}"
+                        for j, val in enumerate(df.iloc[i])
+                    ]
+                )
                 + "\\\\\n"
             )
         output.write(end)
