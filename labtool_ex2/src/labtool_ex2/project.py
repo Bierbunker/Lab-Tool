@@ -3,9 +3,9 @@ import numpy as np
 import pandas
 import re
 import io
-import sys
 import sympy as simp
 import inspect
+from uncertainties.unumpy import isnan
 from collections.abc import Iterable
 from pandas import DataFrame
 from sympy.utilities.iterables import ordered
@@ -209,7 +209,7 @@ class Project:
             else:
                 continue
 
-        self.data.dropna(inplace=True)
+        # self.data.dropna(inplace=True)
         self.messreihen_dfs.append(self.data)
         self.dfs[name] = self.data
 
@@ -782,7 +782,6 @@ class Project:
         line = linecache.getline(filename, lineno, frame.f_globals)  # type: ignore
         complete_function = complete_function + line.split("#")[0].strip()
         while ")" not in line:
-            # print(line)
             lineno = lineno + 1
             line = linecache.getline(filename, lineno, frame.f_globals)  # type: ignore
             if not line.strip().startswith("#"):
