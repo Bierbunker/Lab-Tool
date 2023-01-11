@@ -329,7 +329,7 @@ class Project:
                     m = m.groupdict()
                     _pre_dot = m["pre"]
                     _post_dot = m["post"]
-                    if len(_pre_dot) > pre_dot:
+                    if _pre_dot and len(_pre_dot) > pre_dot:
                         pre_dot = len(_pre_dot)
                     if _post_dot is not None and len(_post_dot) > post_dot:
                         post_dot = len(_post_dot)
@@ -338,7 +338,7 @@ class Project:
                     m = m.groupdict()
                     _e_pre_dot = m["pre"]
                     _e_post_dot = m["post"]
-                    if len(_e_pre_dot) > e_pre_dot:
+                    if _e_pre_dot and len(_e_pre_dot) > e_pre_dot:
                         e_pre_dot = len(_e_pre_dot)
                     if _e_post_dot is not None and len(_e_post_dot) > e_post_dot:
                         e_post_dot = len(_e_post_dot)
@@ -350,17 +350,19 @@ class Project:
                     if len(_exp.strip()) > exp:
                         exp = len(_exp.strip())
 
-                m = re.match(r"(?P<pre>\d+)(\.(?P<post>\d+))*\((?P<err>\d+)\)", fmt_x)
+                m = re.match(
+                    r"(?P<pre>\d+)(\.(?P<post>\d+))*\((?P<err>(\d|\.)+)\)", fmt_x
+                )
                 if m:
                     m = m.groupdict()
                     _pre_dot = m["pre"]
                     _post_dot = m["post"]
                     _e_post_dot = m["err"]
-                    if len(_pre_dot) > pre_dot:
+                    if _pre_dot and len(_pre_dot) > pre_dot:
                         pre_dot = len(_pre_dot)
-                    if _post_dot is not None and len(_post_dot) > post_dot:
+                    if _post_dot and len(_post_dot) > post_dot:
                         post_dot = len(_post_dot)
-                    if len(_e_post_dot) > e_post_dot:
+                    if _e_post_dot and len(_e_post_dot) > e_post_dot:
                         e_post_dot = len(_e_post_dot)
         if split:
             if exp:
