@@ -142,8 +142,7 @@ class Project:
         self._err_prefix = value
 
     def __str__(self) -> str:
-        return f"""This is the [self.name] Project \n
-                following mappings happen in this project {self.gm}"""
+        return f"""This is the {self.name} Project \n following mappings happen in this project {self.gm}"""
 
     def load_data(
         self,
@@ -388,6 +387,8 @@ class Project:
         split: bool = False,
         inline_units: bool = False,
         filter_all_same: bool = False,
+        bold: bool = True,
+        options: str = "",
         vars: Optional[list[str] | list[s.Symbol]] = list(),
         censor: Optional[list] = [np.nan, float("nan")],
     ):
@@ -438,7 +439,7 @@ class Project:
             header = (
                 " & ".join(
                     [
-                        self._tblr_esc(val + " / " + self._unit_of(key))
+                        self._tblr_esc(val + " / " + self._unit_of(key), bold)
                         for key, val in coldict.items()
                     ]
                 )
@@ -446,12 +447,15 @@ class Project:
             )
         else:
             header = (
-                " & ".join([self._tblr_esc(val) for _, val in coldict.items()])
+                " & ".join([self._tblr_esc(val, bold) for _, val in coldict.items()])
                 + "\\\\\n"
             )
             header += (
                 " & ".join(
-                    [self._tblr_esc(self._unit_of(key)) for key, _ in coldict.items()]
+                    [
+                        self._tblr_esc(self._unit_of(key), bold)
+                        for key, _ in coldict.items()
+                    ]
                 )
                 + "\\\\\n"
             )
@@ -471,7 +475,7 @@ class Project:
                 else:
                     colspec.append(f"S[table-format={val}]")
 
-        begin = "\\begin{tblr}{colspec={" + "".join(colspec) + "}}\n"
+        begin = "\\begin{tblr}{" + options + "colspec={" + "".join(colspec) + "}}\n"
         end = "\\end{tblr}\n"
 
         output = io.StringIO()
@@ -542,7 +546,9 @@ class Project:
             ) as tf:
                 tf.write(output.getvalue())
 
-    def _tblr_esc(self, s: str):
+    def _tblr_esc(self, s: str, bold: bool):
+        if bold:
+            s = r"\textbf{" + s + r"}"
         return f"{{{{{{{s}}}}}}}"
 
     def _col_rename(self, columns: list[str]) -> dict[str, str]:
