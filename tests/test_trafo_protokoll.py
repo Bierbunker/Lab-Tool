@@ -226,8 +226,8 @@ def test_trafo_protokoll():
         offset=[30, 10],
         guess={"U2": 24, "XL": 31},
         bounds=[
-            {"name": "U2", "min": "0", "max": "25"},
-            {"name": "L", "min": "30", "max": "32"},
+            {"name": "U2", "min": 1, "max": 100},
+            {"name": "XL", "min": 3, "max": 100},
         ],
         add_fit_params=True,
         granularity=10000,
