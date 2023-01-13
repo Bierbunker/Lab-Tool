@@ -13,6 +13,7 @@ from pandas._typing import (
     Dtype,
     PositionalIndexer,
 )
+from pandas.api.types import is_complex_dtype
 from typing import TypeVar, Any
 from pandas.core.arrays.base import ExtensionOpsMixin
 from uncertainties import ufloat
@@ -638,11 +639,16 @@ class UfloatDataFrameAccessor:
                 continue
             elif column_name in errors:
                 shortened = column_name[1:]
+                if is_complex_dtype(self._obj[shortened]):
+                    # print(self._obj[shortened])
+                    # print(abs(self._obj[shortened]))
+                    self._obj[shortened] = abs(self._obj[shortened])
+
                 df = pd.concat(
                     [
                         df,
                         pd.Series(
-                            uarray(abs(self._obj[shortened]), self._obj[column_name]),
+                            uarray(self._obj[shortened], self._obj[column_name]),
                             name=shortened,
                         ).astype("ufloat"),
                     ],
