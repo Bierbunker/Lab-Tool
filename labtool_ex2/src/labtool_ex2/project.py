@@ -8,7 +8,7 @@ import inspect
 from uncertainties.unumpy import isnan
 from collections.abc import Iterable
 from pandas import DataFrame
-from sympy.utilities.iterables import ordered
+from sympy import default_sort_key
 import matplotlib
 from typing import Callable, Union, Any, Sequence, Optional
 from sympy.core.expr import Expr
@@ -37,7 +37,7 @@ from matplotlib.legend import Legend
 
 # dont fucking move this line
 
-matplotlib.use("Agg")
+# matplotlib.use("Agg")
 from matplotlib.legend import _get_legend_handles_labels  # noqa
 import matplotlib.pyplot as plt  # noqa
 from .dtype import UfloatDtype
@@ -80,7 +80,7 @@ class Project:
                 "xtick.labelsize": 9,
                 "ytick.labelsize": 9,
                 "text.usetex": True,
-                "text.latex.preamble": r"\usepackage{lmodern} \usepackage{siunitx}",
+                "text.latex.preamble": r"\usepackage{lmodern} \usepackage{siunitx} \DeclareSIUnit{\px}{px}",
                 "font.family": "Latin Modern Roman",
             }
             plt.rcParams.update(rcsettings)
@@ -153,7 +153,8 @@ class Project:
         """
         path is the file containing csv data
         loadnew resets the currently loaded data dataframe should be used when importing many files
-        clean should not be touched if you don't know what you are doing contact max if raw data is need"""
+        clean should not be touched if you don't know what you are doing contact max if raw data is need
+        """
         print("\n\nLoading Data from: " + str(path))
         if loadnew:
             # self.data.drop(self.data.index, inplace=True)
@@ -346,11 +347,13 @@ class Project:
                 fmt_x = val.__format__("S")
                 if "e" in fmt_x:
                     fmt_x, _exp = fmt_x.split("e", 1)
+                    _exp = _exp.lstrip("+").lstrip("-").lstrip("0")
                     if len(_exp.strip()) > exp:
                         exp = len(_exp.strip())
 
                 m = re.match(
-                    r"(?P<pre>\d+)(\.(?P<post>\d+))*\((?P<err>(\d|\.)+)\)", fmt_x
+                    r"(-|\+)?(?P<pre>\d+)(\.(?P<post>\d+(\.\d+)?))*\((?P<err>(\d|\.)+)\)",
+                    fmt_x,
                 )
                 if m:
                     m = m.groupdict()
@@ -387,8 +390,9 @@ class Project:
         split: bool = False,
         inline_units: bool = False,
         filter_all_same: bool = False,
-        bold: bool = True,
+        bold: bool = False,
         options: str = "",
+        table_type: str = "tblr",
         vars: Optional[list[str] | list[s.Symbol]] = list(),
         censor: Optional[list] = [np.nan, float("nan")],
     ):
@@ -419,7 +423,6 @@ class Project:
         # self.data = self.data.astype("ufloat")
 
         df = self.data.u.com
-        # print(df)
         df = df[cols].astype("ufloat")
         unique_devs = unique_std_devs(df)
         if not filter_all_same:
@@ -475,8 +478,16 @@ class Project:
                 else:
                     colspec.append(f"S[table-format={val}]")
 
-        begin = "\\begin{tblr}{" + options + "colspec={" + "".join(colspec) + "}}\n"
-        end = "\\end{tblr}\n"
+        begin = (
+            "\\begin{"
+            + table_type
+            + r"}{"
+            + options
+            + "colspec={"
+            + "".join(colspec)
+            + "}}\n"
+        )
+        end = "\\end{" + table_type + "}\n"
 
         output = io.StringIO()
         output.write(begin)
@@ -590,7 +601,6 @@ class Project:
 
     # this is only an explanation of the two functions above
     def _fig_legend(self, **kwdargs) -> Legend:
-
         # generate a sequence of tuples, each contains
         #  - a list of handles (lohand) and
         #  - a list of labels (lolbl)
@@ -914,7 +924,7 @@ class Project:
         return self._groessen_propagation(expr=expr)
 
     def _groessen_propagation(self, expr: Expr) -> Expr:
-        vs = list(ordered(expr.free_symbols))
+        vs = list(sorted(expr.free_symbols, key=default_sort_key))
 
         def gradient(f, vs):
             return Matrix([f]).jacobian(vs)
@@ -930,7 +940,7 @@ class Project:
         return e_func
 
     def _gauss_propagation(self, expr: Expr) -> Expr:
-        vs = list(ordered(expr.free_symbols))
+        vs = list(sorted(expr.free_symbols, key=default_sort_key))
 
         def gradient(f, vs):
             return Matrix([f]).jacobian(vs)
@@ -1048,6 +1058,41 @@ class Project:
             raw_x, raw_y, c=style, marker=".", s=39.0, label=label, *args, **kwargs
         )
 
+    def plot(
+        self,
+        axes: plt.Axes,
+        x: Union[str, s.Symbol, DataFrameLike],
+        y: Union[str, s.Symbol, DataFrameLike],
+        label: str,
+        *args,
+        style: str = "r",
+        errors: bool = False,
+        **kwargs,
+    ) -> None:
+        if isinstance(x, Expr):
+            x_name = self._infer_name(kw="x", pos=1)
+            raw_x = self.data[x_name]
+        else:
+            raw_x, x_name = self._parse_input(x)
+        if isinstance(y, Expr):
+            y_name = self._infer_name(kw="y", pos=2)
+            raw_y = self.data[y_name]
+        else:
+            raw_y, y_name = self._parse_input(y)
+        axes = self._set_x_y_label(ax=axes, x=x_name, y=y_name, color=style)
+
+        if errors:
+            self._add_error(
+                axes=axes,
+                raw_x=raw_x,
+                raw_y=raw_y,
+                x_name=x_name,
+                y_name=y_name,
+                style=style,
+            )
+
+        axes.plot(raw_x, raw_y, c=style, label=label, *args, **kwargs)
+
     def plot_function(
         self,
         axes: plt.Axes,
@@ -1060,7 +1105,6 @@ class Project:
         *args,
         **kwargs,
     ):
-
         if isinstance(x, Expr):
             x_name = self._infer_name(kw="x", pos=1)
             raw_x = self.data[x_name]
@@ -1082,7 +1126,7 @@ class Project:
                 raw_y=raw_y,
                 x_name=x_name,
                 y_name=y_name,
-                color=style,
+                style=style,
             )
 
         axes.plot(
@@ -1169,7 +1213,7 @@ class Project:
                 mod.set_param_hint(
                     name=bound["name"], min=bound["min"], max=bound["max"]
                 )
-                mod.print_param_hints()
+                # mod.print_param_hints()
 
         if guess:
             pars = mod.make_params(**guess)
@@ -1258,15 +1302,28 @@ class Project:
         xmin, xmax = maxes.get_xlim()
         ymin, ymax = maxes.get_ylim()
         if keyvalue is not None:
-            for i, (name, param) in enumerate(keyvalue.items()):
-                uparam = param
-                maxes.text(
-                    s=rf"${self.gm[name]} = {uparam}$ " + self.gv[name],
-                    bbox={"facecolor": color, "alpha": 0.85},
-                    x=(xmax - xmin) / 100 * (5 + offset[0]) + xmin,
-                    y=(ymax - ymin) * (offset[1] / 100 + (i + 1) / 7) + ymin,
-                    fontsize=10,
-                )
+            paramstr = "\n".join(
+                [
+                    rf"${self.gm[name]} = {param}$ " + self.gv[name]
+                    for (name, param) in keyvalue.items()
+                ]
+            )
+            maxes.text(
+                s=paramstr,
+                bbox={"facecolor": color, "alpha": 0.85},
+                x=(xmax - xmin) / 100 * (5 + offset[0]) + xmin,
+                y=(ymax - ymin) * (offset[1] / 100 + 1 / 7) + ymin,
+                fontsize=10,
+            )
+            # for i, (name, param) in enumerate(keyvalue.items()):
+            #     uparam = param
+            #     maxes.text(
+            #         s=rf"${self.gm[name]} = {uparam}$ " + self.gv[name],
+            #         bbox={"facecolor": color, "alpha": 0.85},
+            #         x=(xmax - xmin) / 100 * (5 + offset[0]) + xmin,
+            #         y=(ymax - ymin) * (offset[1] / 100 + (i + 1) / 7) + ymin,
+            #         fontsize=10,
+            #     )
         if text is not None:
             maxes.text(
                 s=text,
