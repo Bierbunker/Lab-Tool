@@ -80,8 +80,9 @@ class Project:
                 "xtick.labelsize": 9,
                 "ytick.labelsize": 9,
                 "text.usetex": True,
-                "text.latex.preamble": r"\usepackage{lmodern} \usepackage{siunitx} \DeclareSIUnit{\px}{px}",
+                "text.latex.preamble": r"\usepackage{lmodern} \usepackage[locale=DE, uncertainty-mode=separate]{siunitx} \DeclareSIUnit{\px}{px}",
                 "font.family": "Latin Modern Roman",
+                "legend.fontsize": 10,
             }
             plt.rcParams.update(rcsettings)
 
@@ -424,6 +425,7 @@ class Project:
 
         df = self.data.u.com
         df = df[cols].astype("ufloat")
+        print(df)
         unique_devs = unique_std_devs(df)
         if not filter_all_same:
             unique_devs = [False] * len(unique_devs)
@@ -629,9 +631,10 @@ class Project:
         if xlabel and ylabel:
             for ax in self.figure.get_axes():  # type:ignore
                 # print(f"testing {ax.get_xlabel()} and {ax.get_ylabel()}")
-                if (ax.get_xlabel() == xlabel or ax.get_xlabel() == "") and (
-                    ax.get_ylabel() == ylabel or ax.get_ylabel() == ""
-                ):
+                if (ax.get_xlabel() == xlabel) and (ax.get_ylabel() == ylabel):
+                    # if (ax.get_xlabel() == xlabel or ax.get_xlabel() == "") and (
+                    #     ax.get_ylabel() == ylabel or ax.get_ylabel() == ""
+                    # ):
                     return ax
             return None
         elif xlabel:
@@ -756,10 +759,15 @@ class Project:
         return simp.lambdify(tuple(expr.free_symbols), expr, "numpy")
 
     # maybe rename to ingest instead of inject
-    def inject_err(self, expr: Expr, name: Optional[str] = None):
+    def inject_err(
+        self, expr: Expr, meter: Optional[Callable], name: Optional[str] = None
+    ):
         """This function is only for readability of the finished code"""
         name = self._infer_name(name=name, kw="expr", pos=0)  # type: ignore
-        self.resolve(expr, name, iserr=True)
+        if meter and callable(meter):
+            self.data["d" + name] = self.data[name].apply(meter)
+        else:
+            self.resolve(expr, name, iserr=True)
 
     def _retrieve_params(self, expr: Expr):
         notfound = list()
@@ -873,7 +881,7 @@ class Project:
 
         function_data, err_function_data = self._retrieve_params(expr=expr)
 
-        self.data[new_var] = self._expr_to_np(expr=expr)(**function_data)
+        self.data.loc[:, new_var] = self._expr_to_np(expr=expr)(**function_data)
         if not iserr:
             if err_function_data:
                 err_expr = self._error_func(expr=expr)
@@ -881,9 +889,9 @@ class Project:
                     sym.name: err_function_data[sym.name]  # type: ignore
                     for sym in err_expr.free_symbols
                 }
-                self.data[self._err_of(new_var)] = self._expr_to_np(expr=err_expr)(
-                    **err_function_data
-                )
+                self.data.loc[:, self._err_of(new_var)] = self._expr_to_np(
+                    expr=err_expr
+                )(**err_function_data)
 
         return s._custom_var([new_var], project=self)
         # TODO use physipy for unit translation and calculation so that units are automatically calculated
@@ -904,7 +912,7 @@ class Project:
 
         function_data, _ = self._retrieve_params(expr=expr)
 
-        self.data[new_var] = self._expr_to_np(expr)(**function_data)
+        self.data[:, new_var] = self._expr_to_np(expr)(**function_data)
         # TODO Add or reset definition of variable using f_locals no like sympy does
         # simp.var(new_var)
         return self.data[new_var]
@@ -1223,7 +1231,7 @@ class Project:
             print("No guess was passed")
             raise Exception
         # print(independent_vars)
-        # print(pars)
+        print(pars)
 
         if self._err_of(y_name) in self.data:
             weights = 1 / (self.data[self._err_of(y_name)])
@@ -1239,10 +1247,14 @@ class Project:
             # out = mod.fit(y_fit, pars,scale_covar=False, **independent_vars)
             out = mod.fit(y_fit, pars, **independent_vars)
         axes = self._set_x_y_label(ax=axes, x=x_name, y=y_name)
+        print(out.fit_report(min_correl=0.25))
         if add_fit_params:
             paramstr = "\n".join(
                 [
-                    rf"${self.gm[name]} = {ufloat(param.value,sigmas*param.stderr)}$ "
+                    rf"${self.gm[name]} = \num"
+                    + "{"
+                    + ufloat(param.value, sigmas * param.stderr).__format__("S")
+                    + r"}$ "
                     + self.gv[name]
                     for (name, param) in out.params.items()
                 ]
@@ -1276,7 +1288,6 @@ class Project:
             x_continues_plot_data, resp - dely, resp + dely, color=style, alpha=0.4
         )
         axes.plot(x_continues_plot_data, resp, style, label=f"{label} fit")
-        print(out.fit_report(min_correl=0.25))
         return out.params
 
     def savefig(self, name: str, clear: bool = True) -> Optional[plt.Axes]:
@@ -1304,7 +1315,11 @@ class Project:
         if keyvalue is not None:
             paramstr = "\n".join(
                 [
-                    rf"${self.gm[name]} = {param}$ " + self.gv[name]
+                    rf"${self.gm[name]} ="
+                    + r"\num{"
+                    + param.__format__("S")
+                    + r"}$ "
+                    + self.gv[name]
                     for (name, param) in keyvalue.items()
                 ]
             )

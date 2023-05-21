@@ -584,6 +584,13 @@ class UfloatDataFrameAccessor:
         # self._validate(dataframe)
         self._obj = dataframe
         self._asuarray = UArray(dataframe)
+        self.err_prefix = "d"
+
+    def _err_of(self, name: str) -> str:
+        return f"{self.err_prefix}{name}"
+
+    def _val_of(self, name: str) -> str:
+        return name.removeprefix(self.err_prefix)
 
     # @staticmethod
     # def _validate(obj):
@@ -612,8 +619,7 @@ class UfloatDataFrameAccessor:
             if isinstance(self._obj[column_name].iloc[0], AffineScalarFunc):
                 series_n = self._obj[column_name].astype("ufloat").u.n
                 series_s = self._obj[column_name].astype("ufloat").u.s
-                # TODO: change 'd' to PREFIX
-                series_s.name = f"d{series_s.name}"
+                series_s.name = self._err_of(series_s.name)
                 df = pd.concat([df, series_n, series_s], axis=1)
             else:
                 df = pd.concat([df, self._obj[column_name]], axis=1)
@@ -622,38 +628,37 @@ class UfloatDataFrameAccessor:
 
     @property
     def com(self):
-
         df = pd.DataFrame(data=None, index=self._obj.index)
 
-        errors = []
-        errored = []
+        errors = set()
+        errored = set()
         for column_name in self._obj:
-            shortened = column_name[1:]
-            # TODO: PREFIX
-            if column_name.startswith("d") and shortened in self._obj.columns:
-                errors.append(column_name)
-                errored.append(shortened)
+            val_name = self._val_of(column_name)
+            err_name = self._err_of(column_name)
+
+            errors.add(err_name)
+            errored.add(val_name)
 
         for column_name in self._obj:
             if column_name in errored:
-                continue
-            elif column_name in errors:
-                shortened = column_name[1:]
-                if is_complex_dtype(self._obj[shortened]):
-                    # print(self._obj[shortened])
-                    # print(abs(self._obj[shortened]))
-                    self._obj[shortened] = abs(self._obj[shortened])
+                err_name = self._err_of(column_name)
+                if err_name not in self._obj.columns:
+                    err = np.zeros_like(self._obj[column_name].values)
+                else:
+                    err = self._obj[err_name]
 
                 df = pd.concat(
                     [
                         df,
                         pd.Series(
-                            uarray(self._obj[shortened], self._obj[column_name]),
-                            name=shortened,
+                            uarray(self._obj[column_name], err),
+                            name=column_name,
                         ).astype("ufloat"),
                     ],
                     axis=1,
                 )
+            elif column_name in errors:
+                continue
             else:
                 df = pd.concat([df, self._obj[column_name]], axis=1)
 
