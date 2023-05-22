@@ -647,16 +647,26 @@ class UfloatDataFrameAccessor:
                 else:
                     err = self._obj[err_name]
 
-                df = pd.concat(
-                    [
-                        df,
-                        pd.Series(
-                            uarray(self._obj[column_name], err),
-                            name=column_name,
-                        ).astype("ufloat"),
-                    ],
-                    axis=1,
-                )
+                if not isinstance(self._obj[column_name].values[0],Variable):
+                    df = pd.concat(
+                        [
+                            df,
+                            pd.Series(
+                                uarray(self._obj[column_name], err),
+                                name=column_name,
+                            ).astype("ufloat"),
+                        ],
+                        axis=1,
+                    )
+                else:
+                    df = pd.concat(
+                        [
+                            df,
+                            self._obj[column_name]
+                        ],
+                        axis=1,
+                    )
+
             elif column_name in errors:
                 continue
             else:
