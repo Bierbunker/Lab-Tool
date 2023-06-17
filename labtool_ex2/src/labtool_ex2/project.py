@@ -929,6 +929,7 @@ class Project:
 
     def _error_func(self, expr: Expr) -> Expr:
         """Uses expr and find its groessenunsicherheits methoden representation"""
+        #Test for pushes
         return self._groessen_propagation(expr=expr)
 
     def _groessen_propagation(self, expr: Expr) -> Expr:
