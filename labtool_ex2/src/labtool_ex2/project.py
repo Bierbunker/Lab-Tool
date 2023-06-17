@@ -930,6 +930,9 @@ class Project:
     def _error_func(self, expr: Expr) -> Expr:
         """Uses expr and find its groessenunsicherheits methoden representation"""
         #Test for pushes
+        vs = list(sorted(expr.free_symbols, key=default_sort_key))
+
+
         return self._groessen_propagation(expr=expr)
 
     def _groessen_propagation(self, expr: Expr) -> Expr:
